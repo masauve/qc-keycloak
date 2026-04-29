@@ -4,8 +4,6 @@ namespace: keycloak
 
 resources:
   - namespace.yaml
-  - operatorgroup.yaml
-  - subscription.yaml
   - keycloak/
   - pipeline/
 
