@@ -77,10 +77,3 @@ spec:
 
         cat /tmp/image-digest | tee "$(results.IMAGE_DIGEST.path)"
         printf "%s" "$(params.IMAGE)" > "$(results.IMAGE_URL.path)"
-      resources:
-        requests:
-          memory: "1Gi"
-          cpu: "500m"
-        limits:
-          memory: "4Gi"
-          cpu: "2"

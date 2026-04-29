@@ -42,10 +42,3 @@ spec:
           value: >-
             -Dmaven.repo.local=$(workspaces.maven-cache.path)/.m2/repository
             -Djava.security.egd=file:/dev/./urandom
-      resources:
-        requests:
-          memory: "512Mi"
-          cpu: "500m"
-        limits:
-          memory: "2Gi"
-          cpu: "2"
