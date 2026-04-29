@@ -1,0 +1,33 @@
+# Patch de l'instance OpenShift GitOps (ArgoCD)
+#
+# Appliqué dans le namespace openshift-gitops par l'administrateur du cluster
+# ou par une application ArgoCD de type "app-of-apps" gérant la plateforme GitOps.
+#
+# Commande d'application manuelle :
+#   oc patch argocd openshift-gitops -n openshift-gitops \
+#     --type=merge --patch-file gitops/argocd/openshift-gitops-patch.yaml
+#
+# Ce patch configure un health check personnalisé pour les PersistentVolumeClaim
+# afin qu'ArgoCD considère l'état Pending comme Healthy.
+# Les PVC avec volumeBindingMode=WaitForFirstConsumer ne se lient qu'au premier
+# montage par un pod — ils resteraient indéfiniment en état Progressing sans ce fix.
+apiVersion: argoproj.io/v1alpha1
+kind: ArgoCD
+metadata:
+  name: openshift-gitops
+  namespace: openshift-gitops
+spec:
+  resourceCustomizations: |
+    PersistentVolumeClaim:
+      health.lua: |
+        hs = {}
+        if obj.status ~= nil then
+          if obj.status.phase == "Bound" or obj.status.phase == "Pending" then
+            hs.status = "Healthy"
+            hs.message = obj.status.phase
+            return hs
+          end
+        end
+        hs.status = "Progressing"
+        hs.message = "En attente de liaison du PVC"
+        return hs

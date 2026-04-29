@@ -4,7 +4,10 @@ metadata:
   name: pipeline-source-pvc
   namespace: keycloak
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    # Wave 20 : les PVC sont créés après les Tasks et le Pipeline (wave 2).
+    # Tekton ne monte les PVC qu'au moment d'un PipelineRun ; ils n'ont pas besoin
+    # d'être Bound avant que les ressources de pipeline soient appliquées.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -18,7 +21,7 @@ metadata:
   name: pipeline-maven-cache-pvc
   namespace: keycloak
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   accessModes:
     - ReadWriteOnce
