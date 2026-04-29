@@ -5,7 +5,6 @@ namespace: keycloak
 resources:
   - serviceaccount.yaml
   - imagestream.yaml
-  - workspaces-pvc.yaml
   - tasks/git-clone.yaml
   - tasks/maven-build.yaml
   - tasks/buildah-build-push.yaml

@@ -37,10 +37,20 @@ spec:
             value: latest
         workspaces:
           - name: source
-            persistentVolumeClaim:
-              claimName: pipeline-source-pvc
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 2Gi
           - name: maven-cache
-            persistentVolumeClaim:
-              claimName: pipeline-maven-cache-pvc
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 5Gi
         timeouts:
           pipeline: 1h0m0s
