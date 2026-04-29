@@ -18,6 +18,10 @@ spec:
       type: string
       description: Profondeur du clone (0 = complet)
       default: "1"
+    - name: sslVerify
+      type: string
+      description: Vérifier le certificat TLS du serveur Git
+      default: "true"
   workspaces:
     - name: output
       description: Répertoire de destination du clone
@@ -28,7 +32,7 @@ spec:
       description: URL du dépôt cloné
   steps:
     - name: clone
-      image: registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8:latest
+      image: registry.redhat.io/ubi9/ubi:latest
       env:
         - name: PARAM_URL
           value: $(params.url)
@@ -36,19 +40,38 @@ spec:
           value: $(params.revision)
         - name: PARAM_DEPTH
           value: $(params.depth)
+        - name: PARAM_SSL_VERIFY
+          value: $(params.sslVerify)
         - name: WORKSPACE_OUTPUT_PATH
           value: $(workspaces.output.path)
       script: |
-        #!/usr/bin/env sh
+        #!/usr/bin/env bash
         set -eu
 
-        /ko-app/git-init \
-          -url="${PARAM_URL}" \
-          -revision="${PARAM_REVISION}" \
-          -path="${WORKSPACE_OUTPUT_PATH}" \
-          -depth="${PARAM_DEPTH}"
+        git config --global credential.helper ""
+        git config --global safe.directory '*'
+        git config --global http.sslVerify "${PARAM_SSL_VERIFY}"
+
+        if [ -d "${WORKSPACE_OUTPUT_PATH}/.git" ]; then
+          echo "Nettoyage du répertoire existant..."
+          rm -rf "${WORKSPACE_OUTPUT_PATH:?}"/*
+          rm -rf "${WORKSPACE_OUTPUT_PATH}"/.[!.]*
+        fi
+
+        echo "Clonage de ${PARAM_URL} (revision: ${PARAM_REVISION}, profondeur: ${PARAM_DEPTH})"
+
+        git clone \
+          --depth="${PARAM_DEPTH}" \
+          "${PARAM_URL}" \
+          "${WORKSPACE_OUTPUT_PATH}"
 
         cd "${WORKSPACE_OUTPUT_PATH}"
-        RESULT_SHA="$(git rev-parse HEAD)"
-        printf "%s" "${RESULT_SHA}" > "$(results.commit.path)"
-        printf "%s" "${PARAM_URL}" > "$(results.url.path)"
+
+        git fetch --depth="${PARAM_DEPTH}" origin "${PARAM_REVISION}" 2>/dev/null || true
+        git checkout "${PARAM_REVISION}" 2>/dev/null || \
+          git checkout -b "detached-${PARAM_REVISION}" "origin/${PARAM_REVISION}" 2>/dev/null || true
+
+        COMMIT_SHA="$(git rev-parse HEAD)"
+        printf "%s" "${COMMIT_SHA}" > "$(results.commit.path)"
+        printf "%s" "${PARAM_URL}"  > "$(results.url.path)"
+        echo "Commit extrait : ${COMMIT_SHA}"

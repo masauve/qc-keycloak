@@ -24,7 +24,7 @@ spec:
       default: "true"
     - name: BUILDAH_IMAGE
       type: string
-      default: registry.redhat.io/rhel9/buildah:latest
+      default: quay.io/buildah/stable:latest
     - name: STORAGE_DRIVER
       type: string
       default: vfs
