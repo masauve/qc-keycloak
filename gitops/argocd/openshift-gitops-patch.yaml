@@ -1,33 +1,31 @@
-# Patch de l'instance OpenShift GitOps (ArgoCD)
+# Patch de argocd-cm pour le health check personnalisé des PersistentVolumeClaim
 #
-# Appliqué dans le namespace openshift-gitops par l'administrateur du cluster
-# ou par une application ArgoCD de type "app-of-apps" gérant la plateforme GitOps.
+# Les PVC avec volumeBindingMode=WaitForFirstConsumer restent en état Pending
+# jusqu'au premier montage par un pod Tekton. Sans ce patch, ArgoCD les
+# considère comme non-sains (Progressing) et bloque les sync-waves indéfiniment.
 #
-# Commande d'application manuelle :
-#   oc patch argocd openshift-gitops -n openshift-gitops \
-#     --type=merge --patch-file gitops/argocd/openshift-gitops-patch.yaml
+# Appliquer une seule fois en tant qu'administrateur du cluster :
+#   oc patch configmap argocd-cm -n openshift-gitops \
+#     --type=merge \
+#     --patch-file gitops/argocd/openshift-gitops-patch.yaml
 #
-# Ce patch configure un health check personnalisé pour les PersistentVolumeClaim
-# afin qu'ArgoCD considère l'état Pending comme Healthy.
-# Les PVC avec volumeBindingMode=WaitForFirstConsumer ne se lient qu'au premier
-# montage par un pod — ils resteraient indéfiniment en état Progressing sans ce fix.
-apiVersion: argoproj.io/v1alpha1
-kind: ArgoCD
+# Le --type=merge ajoute uniquement la clé manquante sans écraser
+# les autres entrées gérées par l'opérateur OpenShift GitOps.
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: openshift-gitops
+  name: argocd-cm
   namespace: openshift-gitops
-spec:
-  resourceCustomizations: |
-    PersistentVolumeClaim:
-      health.lua: |
-        hs = {}
-        if obj.status ~= nil then
-          if obj.status.phase == "Bound" or obj.status.phase == "Pending" then
-            hs.status = "Healthy"
-            hs.message = obj.status.phase
-            return hs
-          end
-        end
-        hs.status = "Progressing"
-        hs.message = "En attente de liaison du PVC"
+data:
+  resource.customizations.health.PersistentVolumeClaim: |
+    hs = {}
+    if obj.status ~= nil then
+      if obj.status.phase == "Bound" or obj.status.phase == "Pending" then
+        hs.status = "Healthy"
+        hs.message = obj.status.phase
         return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "En attente de liaison du PVC"
+    return hs
