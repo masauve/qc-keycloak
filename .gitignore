@@ -1,0 +1,23 @@
+### Maven ###
+target/
+*.jar
+*.war
+*.ear
+.m2/
+
+### IDE ###
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+### Secrets - Ne JAMAIS committer ces fichiers ###
+**/sealed-secrets/
+**/*secret*.yaml
+!**/secrets-template.yaml
+**/.env
+**/credentials.yaml
+**/tls.crt
+**/tls.key

@@ -1,0 +1,70 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: keycloak-github-webhook
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - name: github-push-main
+      interceptors:
+        - ref:
+            name: github
+            kind: ClusterInterceptor
+          params:
+            - name: secretRef
+              value:
+                secretName: github-webhook-secret
+                secretKey: secret
+            - name: eventTypes
+              value:
+                - push
+        - ref:
+            name: cel
+            kind: ClusterInterceptor
+          params:
+            - name: filter
+              value: "body.ref in ['refs/heads/main', 'refs/heads/master']"
+            - name: overlays
+              value:
+                - key: git_ref_short
+                  expression: "body.ref.split('/')[2]"
+      bindings:
+        - ref: keycloak-git-push-binding
+      template:
+        ref: keycloak-build-trigger-template
+  resources:
+    kubernetesResource:
+      spec:
+        template:
+          spec:
+            serviceAccountName: pipeline
+            containers:
+              - resources:
+                  requests:
+                    memory: "64Mi"
+                    cpu: "100m"
+                  limits:
+                    memory: "128Mi"
+                    cpu: "500m"
+---
+# Route OpenShift pour exposer le webhook publiquement
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: keycloak-github-webhook
+  namespace: keycloak
+  annotations:
+    haproxy.router.openshift.io/timeout: 2m
+spec:
+  to:
+    kind: Service
+    name: el-keycloak-github-webhook
+  port:
+    targetPort: http-listener
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

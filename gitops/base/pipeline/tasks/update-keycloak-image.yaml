@@ -1,0 +1,46 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: update-keycloak-image
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+spec:
+  params:
+    - name: KEYCLOAK_NAME
+      type: string
+      description: Nom de la ressource Keycloak à mettre à jour
+      default: keycloak
+    - name: KEYCLOAK_NAMESPACE
+      type: string
+      description: Namespace de la ressource Keycloak
+      default: keycloak
+    - name: IMAGE_URL
+      type: string
+      description: URL complète de la nouvelle image Keycloak
+    - name: IMAGE_DIGEST
+      type: string
+      description: Condensé de la nouvelle image
+  steps:
+    - name: patch-keycloak
+      image: registry.redhat.io/openshift4/ose-cli:latest
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        IMAGE_WITH_DIGEST="$(params.IMAGE_URL)@$(params.IMAGE_DIGEST)"
+
+        echo "Mise à jour de l'image Keycloak vers: ${IMAGE_WITH_DIGEST}"
+
+        oc patch keycloak "$(params.KEYCLOAK_NAME)" \
+          -n "$(params.KEYCLOAK_NAMESPACE)" \
+          --type=merge \
+          -p "{\"spec\":{\"image\":\"${IMAGE_WITH_DIGEST}\"}}"
+
+        echo "Attente de la mise à jour de Keycloak..."
+        oc wait keycloak "$(params.KEYCLOAK_NAME)" \
+          -n "$(params.KEYCLOAK_NAMESPACE)" \
+          --for=condition=Ready \
+          --timeout=600s
+
+        echo "Keycloak mis à jour avec succès."

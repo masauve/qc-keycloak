@@ -1,0 +1,46 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: keycloak-build-trigger-template
+  namespace: keycloak
+spec:
+  params:
+    - name: git-url
+      description: URL du dépôt Git
+    - name: git-revision
+      description: SHA du commit Git
+      default: main
+    - name: git-ref
+      description: Référence Git (branche/tag)
+      default: refs/heads/main
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: keycloak-build-deploy-
+        namespace: keycloak
+        labels:
+          tekton.dev/pipeline: keycloak-build-deploy
+          app.kubernetes.io/part-of: quebec
+      spec:
+        serviceAccountName: pipeline
+        pipelineRef:
+          name: keycloak-build-deploy
+        params:
+          - name: GIT_URL
+            value: $(tt.params.git-url)
+          - name: GIT_REVISION
+            value: $(tt.params.git-revision)
+          - name: IMAGE_NAME
+            value: image-registry.openshift-image-registry.svc:5000/keycloak/keycloak-custom
+          - name: IMAGE_TAG
+            value: latest
+        workspaces:
+          - name: source
+            persistentVolumeClaim:
+              claimName: pipeline-source-pvc
+          - name: maven-cache
+            persistentVolumeClaim:
+              claimName: pipeline-maven-cache-pvc
+        timeouts:
+          pipeline: 1h0m0s

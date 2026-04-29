@@ -1,0 +1,56 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  instances: 2
+  # Image construite par le pipeline Tekton et poussée dans le registre interne OpenShift
+  image: image-registry.openshift-image-registry.svc:5000/keycloak/keycloak-custom:latest
+  # startOptimized: true indique à l'opérateur que l'image a déjà été optimisée (kc.sh build exécuté dans le Containerfile)
+  startOptimized: true
+  db:
+    vendor: postgres
+    host: keycloak-postgresql
+    port: 5432
+    database: keycloak
+    poolInitialSize: 5
+    poolMinSize: 5
+    poolMaxSize: 20
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  http:
+    httpEnabled: false
+    httpsPort: 8443
+    tlsSecret: keycloak-tls-secret
+  hostname:
+    hostname: keycloak.apps.myocp.net
+    strict: true
+    strictBackchannel: false
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2"
+  additionalOptions:
+    - name: log-level
+      value: INFO
+    - name: features
+      value: "token-exchange,admin-fine-grained-authz"
+    - name: cache
+      value: ispn
+    - name: cache-stack
+      value: kubernetes
+    - name: http-relative-path
+      value: /auth

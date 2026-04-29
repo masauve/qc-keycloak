@@ -1,0 +1,66 @@
+# =============================================================================
+# Containerfile - Red Hat Build of Keycloak 26.4 personnalisé
+# Quebec
+#
+# Structure en deux étapes (multi-stage build) conformément à la documentation :
+# https://docs.redhat.com/en/documentation/red_hat_build_of_keycloak/26.4/html-single/server_configuration_guide/index#containers-writing-your-optimized-red-hat-build-of-keycloak-containerfile
+#
+# Étape 1 (builder): Copie des fournisseurs personnalisés et exécution de kc.sh build
+#                    pour optimiser l'image (pré-configuration, réduction du démarrage).
+# Étape 2 (final):   Image minimale avec les fichiers optimisés uniquement.
+# =============================================================================
+
+# --- Étape 1 : Construction et optimisation ---
+FROM registry.redhat.io/rhbk/keycloak-rhel9:26.4 AS builder
+
+# Configuration de la base de données
+ENV KC_DB=postgres
+
+# Fonctionnalités activées
+ENV KC_FEATURES=token-exchange,admin-fine-grained-authz
+
+# Cache distribué pour OpenShift/Kubernetes
+ENV KC_CACHE=ispn
+ENV KC_CACHE_STACK=kubernetes
+
+# Métriques et santé
+ENV KC_HEALTH_ENABLED=true
+ENV KC_METRICS_ENABLED=true
+
+WORKDIR /opt/keycloak
+
+# Copier le fournisseur du thème Quebec
+# (compilé par le pipeline Tekton avec Maven avant cette étape)
+COPY theme/target/keycloak-theme-quebec-1.0.0.jar /opt/keycloak/providers/
+
+# Copier le fournisseur de l'action requise (acceptation des conditions)
+COPY required-action/target/keycloak-required-action-1.0.0.jar /opt/keycloak/providers/
+
+# Exécuter la commande d'optimisation de Keycloak.
+# Cette commande effectue la résolution des SPIs, la génération du bytecode optimisé
+# et intègre la configuration dans l'image, réduisant le temps de démarrage.
+RUN /opt/keycloak/bin/kc.sh build \
+    --db=postgres \
+    --health-enabled=true \
+    --metrics-enabled=true \
+    --features=token-exchange,admin-fine-grained-authz \
+    --cache=ispn \
+    --cache-stack=kubernetes
+
+# --- Étape 2 : Image finale minimale ---
+FROM registry.redhat.io/rhbk/keycloak-rhel9:26.4
+
+# Copier l'intégralité du répertoire Keycloak optimisé depuis l'étape de construction
+COPY --from=builder /opt/keycloak/ /opt/keycloak/
+
+# Variables d'environnement d'exécution (non sensibles)
+# Les valeurs sensibles (DB_URL, DB_USERNAME, DB_PASSWORD, KC_HOSTNAME)
+# sont injectées par l'opérateur Keycloak via la ressource Keycloak CR.
+ENV KC_DB=postgres
+ENV KC_HEALTH_ENABLED=true
+ENV KC_METRICS_ENABLED=true
+ENV KC_CACHE=ispn
+ENV KC_CACHE_STACK=kubernetes
+ENV KC_HTTP_RELATIVE_PATH=/auth
+
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]

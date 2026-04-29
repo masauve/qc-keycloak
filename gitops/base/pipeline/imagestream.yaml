@@ -1,0 +1,13 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: keycloak-custom
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  lookupPolicy:
+    local: true

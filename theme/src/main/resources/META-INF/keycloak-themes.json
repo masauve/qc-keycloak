@@ -1,0 +1,8 @@
+{
+  "themes": [
+    {
+      "name": "quebec",
+      "types": ["login"]
+    }
+  ]
+}

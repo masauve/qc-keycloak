@@ -1,0 +1,452 @@
+/*
+ * Thème sombre - Quebec
+ * Basé sur le système de design Quebec.ca
+ * https://design.quebec.ca/design/bases/theme-sombre
+ */
+
+/* ============================================================
+   Palette de couleurs - Thème sombre
+   ============================================================ */
+:root {
+  /* Fonds */
+  --gq-fond-principal:    #121519;  /* Gris 900 */
+  --gq-fond-eleve:        #1C2025;  /* Gris 850 */
+
+  /* Texte */
+  --gq-texte-principal:   #D7D8DD;  /* Gris 150 */
+  --gq-texte-secondaire:  #8590A8;  /* Gris 400 */
+  --gq-texte-discret:     #6A7688;  /* Gris 500 */
+
+  /* Bleus */
+  --gq-bleu-800:          #162B47;
+  --gq-bleu-500:          #0078CC;
+  --gq-bleu-400:          #3B95E1;
+  --gq-bleu-300:          #72B2EB;
+  --gq-bleu-200:          #ADCDEB;
+  --gq-bleu-150:          #C6DBEE;
+
+  /* Bordures */
+  --gq-bordure:           #3B424C;  /* Gris 700 */
+  --gq-bordure-focus:     #3B95E1;  /* Bleu 400 */
+
+  /* Erreurs */
+  --gq-erreur-fond:       #4F180E;  /* Rouge 800 */
+  --gq-erreur-bordure:    #BB3A23;  /* Rouge 550 */
+  --gq-erreur-texte:      #F3BCB6;  /* Rouge 200 */
+  --gq-erreur-icone:      #F26049;  /* Rouge 400 */
+
+  /* Succès */
+  --gq-succes-fond:       #1E2F17;  /* Vert 800 */
+  --gq-succes-couleur:    #6E9C57;  /* Vert 400 */
+  --gq-succes-texte:      #B0D493;  /* Vert 200 */
+
+  /* Avertissements */
+  --gq-avert-fond:        #3F240C;  /* Jaune 800 */
+  --gq-avert-couleur:     #AC7900;  /* Jaune 450 */
+
+  /* Gris */
+  --gq-gris-700:          #3B424C;
+  --gq-gris-500:          #6A7688;
+  --gq-gris-400:          #8590A8;
+  --gq-gris-300:          #A7ACBC;
+}
+
+/* ============================================================
+   Base - Page et corps
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: var(--gq-fond-principal) !important;
+  color: var(--gq-texte-principal) !important;
+  font-family: "Nunito Sans", "Open Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   Bandeau d'identité québécoise
+   ============================================================ */
+body::before {
+  content: "Quebec";
+  display: block;
+  background-color: var(--gq-bleu-800);
+  border-bottom: 3px solid var(--gq-bleu-400);
+  color: var(--gq-bleu-200);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.4rem 1rem;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+/* ============================================================
+   Conteneur de connexion PatternFly 5
+   ============================================================ */
+.pf-v5-c-login {
+  background-color: var(--gq-fond-principal) !important;
+  padding-top: 3rem;
+  min-height: 100vh;
+}
+
+.pf-v5-c-login__main {
+  background-color: var(--gq-fond-eleve) !important;
+  border: 1px solid var(--gq-bordure);
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 1px rgba(198, 219, 238, 0.02),
+    0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   En-tête de la page de connexion
+   ============================================================ */
+.pf-v5-c-login__header {
+  background-color: transparent !important;
+  padding-top: 2rem;
+}
+
+.pf-v5-c-login__header-logo {
+  filter: brightness(1);
+}
+
+/* ============================================================
+   Titres et textes
+   ============================================================ */
+.pf-v5-c-title,
+.pf-v5-c-login__main-header-title,
+h1, h2, h3, h4, h5, h6 {
+  color: var(--gq-texte-principal) !important;
+  font-weight: 700;
+}
+
+.pf-v5-c-login__main-header-desc,
+.pf-v5-c-login__main-header-subtitle {
+  color: var(--gq-texte-secondaire) !important;
+}
+
+/* ============================================================
+   Étiquettes de formulaire
+   ============================================================ */
+.pf-v5-c-form__label-text,
+label {
+  color: var(--gq-texte-principal) !important;
+  font-weight: 500;
+}
+
+.pf-v5-c-form__helper-text {
+  color: var(--gq-texte-secondaire) !important;
+}
+
+.pf-v5-c-form__helper-text-icon {
+  color: var(--gq-texte-discret) !important;
+}
+
+/* ============================================================
+   Champs de saisie
+   ============================================================ */
+.pf-v5-c-form-control,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+select,
+textarea {
+  background-color: var(--gq-fond-eleve) !important;
+  border: 1px solid var(--gq-bordure) !important;
+  color: var(--gq-texte-principal) !important;
+  border-radius: 4px !important;
+  padding: 0.5rem 0.75rem !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pf-v5-c-form-control:hover,
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover {
+  border-color: var(--gq-gris-400) !important;
+}
+
+.pf-v5-c-form-control:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: var(--gq-bleu-400) !important;
+  box-shadow: 0 0 0 2px rgba(59, 149, 225, 0.25) !important;
+  outline: none !important;
+}
+
+.pf-v5-c-form-control::placeholder,
+input::placeholder {
+  color: var(--gq-texte-discret) !important;
+}
+
+/* Icône afficher/masquer le mot de passe */
+.pf-v5-c-button.pf-m-plain {
+  color: var(--gq-texte-secondaire) !important;
+}
+
+.pf-v5-c-button.pf-m-plain:hover {
+  color: var(--gq-texte-principal) !important;
+}
+
+/* ============================================================
+   Bouton principal
+   ============================================================ */
+.pf-v5-c-button.pf-m-primary,
+#kc-login,
+input[type="submit"].btn-primary,
+.btn-primary {
+  background-color: var(--gq-bleu-400) !important;
+  border-color: var(--gq-bleu-400) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  padding: 0.625rem 1.5rem !important;
+  font-size: 1rem !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+#kc-login:hover,
+input[type="submit"].btn-primary:hover {
+  background-color: var(--gq-bleu-500) !important;
+  border-color: var(--gq-bleu-500) !important;
+}
+
+.pf-v5-c-button.pf-m-primary:focus,
+#kc-login:focus {
+  outline: 2px solid var(--gq-bleu-300) !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
+}
+
+.pf-v5-c-button.pf-m-primary:active,
+#kc-login:active {
+  background-color: var(--gq-bleu-800) !important;
+  border-color: var(--gq-bleu-800) !important;
+}
+
+/* ============================================================
+   Bouton secondaire / lien
+   ============================================================ */
+.pf-v5-c-button.pf-m-secondary {
+  background-color: transparent !important;
+  border: 1px solid var(--gq-bleu-400) !important;
+  color: var(--gq-bleu-400) !important;
+  border-radius: 4px !important;
+}
+
+.pf-v5-c-button.pf-m-secondary:hover {
+  background-color: var(--gq-bleu-800) !important;
+  border-color: var(--gq-bleu-300) !important;
+  color: var(--gq-bleu-300) !important;
+}
+
+/* ============================================================
+   Liens
+   ============================================================ */
+a,
+.pf-v5-c-button.pf-m-link,
+#kc-registration a,
+#kc-info a {
+  color: var(--gq-bleu-300) !important;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover,
+.pf-v5-c-button.pf-m-link:hover,
+#kc-registration a:hover {
+  color: var(--gq-bleu-200) !important;
+  text-decoration: underline;
+}
+
+a:focus,
+.pf-v5-c-button.pf-m-link:focus {
+  outline: 2px solid var(--gq-bleu-400);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================================
+   Messages d'alerte et de validation
+   ============================================================ */
+.pf-v5-c-alert,
+.alert {
+  border-radius: 4px !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.pf-v5-c-alert.pf-m-danger,
+.alert-danger,
+.alert-error,
+#kc-error-message,
+.pf-v5-c-form__helper-text.pf-m-error {
+  background-color: var(--gq-erreur-fond) !important;
+  border: 1px solid var(--gq-erreur-bordure) !important;
+  color: var(--gq-erreur-texte) !important;
+}
+
+.pf-v5-c-alert.pf-m-danger .pf-v5-c-alert__icon,
+.pf-v5-c-form__helper-text.pf-m-error .pf-v5-c-form__helper-text-icon {
+  color: var(--gq-erreur-icone) !important;
+}
+
+.pf-v5-c-alert.pf-m-success,
+.alert-success {
+  background-color: var(--gq-succes-fond) !important;
+  border: 1px solid var(--gq-succes-couleur) !important;
+  color: var(--gq-succes-texte) !important;
+}
+
+.pf-v5-c-alert.pf-m-warning,
+.alert-warning {
+  background-color: var(--gq-avert-fond) !important;
+  border: 1px solid var(--gq-avert-couleur) !important;
+  color: var(--gq-texte-principal) !important;
+}
+
+.pf-v5-c-alert.pf-m-info,
+.alert-info {
+  background-color: var(--gq-bleu-800) !important;
+  border: 1px solid var(--gq-bleu-400) !important;
+  color: var(--gq-bleu-200) !important;
+}
+
+/* Message d'erreur global de connexion */
+#kc-error-message p,
+.kc-feedback-text {
+  color: var(--gq-erreur-texte) !important;
+}
+
+/* ============================================================
+   Case à cocher (Se souvenir de moi)
+   ============================================================ */
+.pf-v5-c-check__input,
+input[type="checkbox"] {
+  accent-color: var(--gq-bleu-400);
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.pf-v5-c-check__label,
+.checkbox label {
+  color: var(--gq-texte-principal) !important;
+}
+
+/* ============================================================
+   Séparateurs
+   ============================================================ */
+hr,
+.pf-v5-c-divider {
+  border-color: var(--gq-bordure) !important;
+}
+
+/* ============================================================
+   Pied de page de connexion
+   ============================================================ */
+.pf-v5-c-login__footer {
+  color: var(--gq-texte-secondaire) !important;
+}
+
+.pf-v5-c-login__footer-band {
+  background-color: var(--gq-fond-eleve) !important;
+  border-top: 1px solid var(--gq-bordure);
+}
+
+/* ============================================================
+   Fournisseurs d'identité externes (connexion sociale)
+   ============================================================ */
+#kc-social-providers {
+  border-top: 1px solid var(--gq-bordure);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+.pf-v5-c-login__main-footer-band-item a,
+.zocial {
+  background-color: var(--gq-fond-eleve) !important;
+  border: 1px solid var(--gq-bordure) !important;
+  color: var(--gq-texte-principal) !important;
+  border-radius: 4px !important;
+}
+
+.zocial:hover {
+  background-color: var(--gq-gris-700) !important;
+  border-color: var(--gq-gris-400) !important;
+}
+
+/* ============================================================
+   Page des conditions d'utilisation (action requise personnalisée)
+   ============================================================ */
+.gq-conditions-wrapper {
+  padding: 0;
+}
+
+.gq-conditions-texte {
+  background-color: rgba(198, 219, 238, 0.03);
+  border: 1px solid var(--gq-bordure);
+  border-left: 4px solid var(--gq-bleu-400);
+  border-radius: 4px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--gq-texte-principal);
+  line-height: 1.7;
+  font-size: 0.9375rem;
+}
+
+.gq-conditions-texte p {
+  margin: 0;
+}
+
+.gq-conditions-accepter-btn {
+  background-color: var(--gq-bleu-400) !important;
+  border-color: var(--gq-bleu-400) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s ease;
+}
+
+.gq-conditions-accepter-btn:hover {
+  background-color: var(--gq-bleu-500) !important;
+}
+
+/* ============================================================
+   Ajustements responsive
+   ============================================================ */
+@media (max-width: 576px) {
+  .pf-v5-c-login__main {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+  }
+
+  .pf-v5-c-login {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

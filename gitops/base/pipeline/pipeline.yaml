@@ -1,0 +1,147 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: keycloak-build-deploy
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  params:
+    - name: GIT_URL
+      type: string
+      description: URL du dépôt Git contenant le code source
+    - name: GIT_REVISION
+      type: string
+      description: Branche ou tag Git à utiliser
+      default: main
+    - name: IMAGE_NAME
+      type: string
+      description: Nom de l'image à construire (sans tag)
+      default: image-registry.openshift-image-registry.svc:5000/keycloak/keycloak-custom
+    - name: IMAGE_TAG
+      type: string
+      description: Tag de l'image à construire
+      default: latest
+    - name: KEYCLOAK_NAME
+      type: string
+      default: keycloak
+    - name: KEYCLOAK_NAMESPACE
+      type: string
+      default: keycloak
+  workspaces:
+    - name: source
+      description: Espace de travail partagé pour le code source
+    - name: maven-cache
+      description: Cache Maven pour accélérer les compilations successives
+    - name: dockerconfig
+      description: Authentification au registre de conteneurs
+      optional: true
+  results:
+    - name: IMAGE_URL
+      description: URL de l'image construite
+      value: $(tasks.build-image.results.IMAGE_URL)
+    - name: IMAGE_DIGEST
+      description: Condensé de l'image construite
+      value: $(tasks.build-image.results.IMAGE_DIGEST)
+    - name: GIT_COMMIT
+      description: SHA du commit Git construit
+      value: $(tasks.clone.results.commit)
+  tasks:
+    # === Étape 1: Cloner le dépôt ===
+    - name: clone
+      taskRef:
+        name: git-clone
+        kind: Task
+      params:
+        - name: url
+          value: $(params.GIT_URL)
+        - name: revision
+          value: $(params.GIT_REVISION)
+      workspaces:
+        - name: output
+          workspace: source
+
+    # === Étape 2a: Compiler le thème (parallèle) ===
+    - name: build-theme
+      runAfter:
+        - clone
+      taskRef:
+        name: maven-build
+        kind: Task
+      params:
+        - name: CONTEXT_DIR
+          value: theme
+        - name: GOALS
+          value:
+            - package
+            - -DskipTests
+            - -B
+      workspaces:
+        - name: source
+          workspace: source
+        - name: maven-cache
+          workspace: maven-cache
+
+    # === Étape 2b: Compiler l'action requise (parallèle) ===
+    - name: build-required-action
+      runAfter:
+        - clone
+      taskRef:
+        name: maven-build
+        kind: Task
+      params:
+        - name: CONTEXT_DIR
+          value: required-action
+        - name: GOALS
+          value:
+            - package
+            - -DskipTests
+            - -B
+      workspaces:
+        - name: source
+          workspace: source
+        - name: maven-cache
+          workspace: maven-cache
+
+    # === Étape 3: Construire et pousser l'image de conteneur ===
+    - name: build-image
+      runAfter:
+        - build-theme
+        - build-required-action
+      taskRef:
+        name: buildah-build-push
+        kind: Task
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME):$(params.IMAGE_TAG)
+        - name: DOCKERFILE
+          value: container/Containerfile
+        - name: CONTEXT
+          value: "."
+        - name: TLSVERIFY
+          value: "false"
+      workspaces:
+        - name: source
+          workspace: source
+        - name: dockerconfig
+          workspace: dockerconfig
+
+    # === Étape 4: Mettre à jour l'image Keycloak ===
+    - name: update-keycloak
+      runAfter:
+        - build-image
+      taskRef:
+        name: update-keycloak-image
+        kind: Task
+      params:
+        - name: KEYCLOAK_NAME
+          value: $(params.KEYCLOAK_NAME)
+        - name: KEYCLOAK_NAMESPACE
+          value: $(params.KEYCLOAK_NAMESPACE)
+        - name: IMAGE_URL
+          value: $(tasks.build-image.results.IMAGE_URL)
+        - name: IMAGE_DIGEST
+          value: $(tasks.build-image.results.IMAGE_DIGEST)

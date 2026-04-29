@@ -1,0 +1,54 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: git-clone
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+spec:
+  params:
+    - name: url
+      type: string
+      description: URL du dépôt Git à cloner
+    - name: revision
+      type: string
+      description: Branche, tag ou SHA à extraire
+      default: main
+    - name: depth
+      type: string
+      description: Profondeur du clone (0 = complet)
+      default: "1"
+  workspaces:
+    - name: output
+      description: Répertoire de destination du clone
+  results:
+    - name: commit
+      description: SHA du commit extrait
+    - name: url
+      description: URL du dépôt cloné
+  steps:
+    - name: clone
+      image: registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8:latest
+      env:
+        - name: PARAM_URL
+          value: $(params.url)
+        - name: PARAM_REVISION
+          value: $(params.revision)
+        - name: PARAM_DEPTH
+          value: $(params.depth)
+        - name: WORKSPACE_OUTPUT_PATH
+          value: $(workspaces.output.path)
+      script: |
+        #!/usr/bin/env sh
+        set -eu
+
+        /ko-app/git-init \
+          -url="${PARAM_URL}" \
+          -revision="${PARAM_REVISION}" \
+          -path="${WORKSPACE_OUTPUT_PATH}" \
+          -depth="${PARAM_DEPTH}"
+
+        cd "${WORKSPACE_OUTPUT_PATH}"
+        RESULT_SHA="$(git rev-parse HEAD)"
+        printf "%s" "${RESULT_SHA}" > "$(results.commit.path)"
+        printf "%s" "${PARAM_URL}" > "$(results.url.path)"

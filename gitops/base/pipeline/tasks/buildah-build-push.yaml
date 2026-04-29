@@ -1,0 +1,86 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: buildah-build-push
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+spec:
+  params:
+    - name: IMAGE
+      type: string
+      description: Référence complète de l'image à construire et pousser
+    - name: DOCKERFILE
+      type: string
+      description: Chemin vers le Containerfile/Dockerfile
+      default: container/Containerfile
+    - name: CONTEXT
+      type: string
+      description: Répertoire de contexte pour la construction de l'image
+      default: "."
+    - name: TLSVERIFY
+      type: string
+      description: Vérifier les certificats TLS du registre
+      default: "true"
+    - name: BUILDAH_IMAGE
+      type: string
+      default: registry.redhat.io/rhel9/buildah:latest
+    - name: STORAGE_DRIVER
+      type: string
+      default: vfs
+  workspaces:
+    - name: source
+      description: Répertoire contenant le code source et les artefacts de compilation
+    - name: dockerconfig
+      description: Secret Docker contenant les informations d'authentification du registre
+      optional: true
+  results:
+    - name: IMAGE_DIGEST
+      description: Condensé de l'image construite
+    - name: IMAGE_URL
+      description: URL complète de l'image poussée
+  steps:
+    - name: build
+      image: $(params.BUILDAH_IMAGE)
+      workingDir: $(workspaces.source.path)
+      securityContext:
+        capabilities:
+          add:
+            - SETFCAP
+      env:
+        - name: STORAGE_DRIVER
+          value: $(params.STORAGE_DRIVER)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        DOCKER_CONFIG=""
+        if [ "$(workspaces.dockerconfig.bound)" = "true" ]; then
+          DOCKER_CONFIG="$(workspaces.dockerconfig.path)"
+        fi
+
+        buildah --storage-driver="${STORAGE_DRIVER}" bud \
+          --format=oci \
+          --tls-verify="$(params.TLSVERIFY)" \
+          --no-cache \
+          -f "$(params.DOCKERFILE)" \
+          -t "$(params.IMAGE)" \
+          "$(params.CONTEXT)"
+
+        [ -n "${DOCKER_CONFIG}" ] && export REGISTRY_AUTH_FILE="${DOCKER_CONFIG}/.dockerconfigjson"
+
+        buildah --storage-driver="${STORAGE_DRIVER}" push \
+          --tls-verify="$(params.TLSVERIFY)" \
+          --digestfile /tmp/image-digest \
+          "$(params.IMAGE)" \
+          "docker://$(params.IMAGE)"
+
+        cat /tmp/image-digest | tee "$(results.IMAGE_DIGEST.path)"
+        printf "%s" "$(params.IMAGE)" > "$(results.IMAGE_URL.path)"
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "500m"
+        limits:
+          memory: "4Gi"
+          cpu: "2"

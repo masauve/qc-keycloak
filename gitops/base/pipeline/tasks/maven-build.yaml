@@ -1,0 +1,51 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: maven-build
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+spec:
+  params:
+    - name: GOALS
+      type: array
+      description: Objectifs Maven à exécuter
+      default:
+        - package
+        - -DskipTests
+    - name: MAVEN_IMAGE
+      type: string
+      description: Image Maven à utiliser
+      default: registry.access.redhat.com/ubi9/openjdk-17:latest
+    - name: CONTEXT_DIR
+      type: string
+      description: Répertoire de contexte pour la commande Maven
+      default: "."
+  workspaces:
+    - name: source
+      description: Répertoire source du projet
+    - name: maven-cache
+      description: Cache du dépôt Maven local
+      optional: true
+  steps:
+    - name: mvn-package
+      image: $(params.MAVEN_IMAGE)
+      workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
+      args:
+        - $(params.GOALS[*])
+      command:
+        - mvn
+      env:
+        - name: HOME
+          value: /root
+        - name: MAVEN_OPTS
+          value: >-
+            -Dmaven.repo.local=$(workspaces.maven-cache.path)/.m2/repository
+            -Djava.security.egd=file:/dev/./urandom
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "500m"
+        limits:
+          memory: "2Gi"
+          cpu: "2"
