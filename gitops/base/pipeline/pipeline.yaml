@@ -54,7 +54,7 @@ spec:
     - name: clone
       taskRef:
         name: git-clone
-        kind: Task
+        kind: ClusterTask
       params:
         - name: url
           value: $(params.GIT_URL)
