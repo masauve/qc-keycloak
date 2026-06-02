@@ -65,7 +65,9 @@ ENV KC_DB=postgres
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 ENV KC_CACHE=ispn
-ENV KC_CACHE_STACK=kubernetes
+# jdbc-ping : decouverte du cluster via PostgreSQL (recommande pour l'operateur
+# depuis Keycloak 26.1). Le stack « kubernetes » exigeait -Djgroups.dns.query.
+ENV KC_CACHE_STACK=jdbc-ping
 ENV KC_HTTP_RELATIVE_PATH=/auth
 
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]

@@ -49,7 +49,11 @@ spec:
       value: "token-exchange,admin-fine-grained-authz"
     - name: cache
       value: ispn
+    # jdbc-ping : decouverte du cluster via la base PostgreSQL existante.
+    # Recommande/par defaut pour l'operateur depuis Keycloak 26.1 ; remplace
+    # le stack « kubernetes » (DNS_PING) qui exigeait -Djgroups.dns.query et
+    # echouait avec « dns_query can not be null or empty ».
     - name: cache-stack
-      value: kubernetes
+      value: jdbc-ping
     - name: http-relative-path
       value: /auth
