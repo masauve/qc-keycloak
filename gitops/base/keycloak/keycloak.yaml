@@ -33,7 +33,7 @@ spec:
     httpsPort: 8443
     tlsSecret: keycloak-tls-secret
   hostname:
-    hostname: keycloak.apps.myocp.net
+    hostname: keycloak.apps.sno.myocp.net
     strict: true
   resources:
     requests:

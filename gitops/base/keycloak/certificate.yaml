@@ -11,7 +11,7 @@
 # attend l'etat Ready du Certificate avant de poursuivre les vagues suivantes.
 #
 # Le nom DNS DOIT correspondre a spec.hostname.hostname de la ressource
-# Keycloak. En base : keycloak.apps.myocp.net (surcharge par overlay).
+# Keycloak. En base : keycloak.apps.sno.myocp.net.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -40,7 +40,7 @@ spec:
     - digital signature
     - key encipherment
   dnsNames:
-    - keycloak.apps.myocp.net
+    - keycloak.apps.sno.myocp.net
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
