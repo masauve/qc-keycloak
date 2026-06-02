@@ -4,6 +4,7 @@ namespace: keycloak
 
 resources:
   - secrets-template.yaml
+  - certificate.yaml
   - postgresql-statefulset.yaml
   - postgresql-service.yaml
   - keycloak.yaml

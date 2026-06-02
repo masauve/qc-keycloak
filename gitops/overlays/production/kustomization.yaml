@@ -15,10 +15,20 @@ patches:
     patch: |-
       - op: replace
         path: /spec/hostname/hostname
-        value: keycloak.apps.VOTRE_CLUSTER.example.com
+        value: keycloak.apps.sno.myocp.net
       - op: replace
         path: /spec/instances
-        value: 3
+        value: 1
+  # Aligner le nom DNS du certificat sur le hostname Keycloak de production
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: keycloak-tls
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: keycloak.apps.sno.myocp.net
 
 commonLabels:
   environment: production

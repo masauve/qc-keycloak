@@ -1,0 +1,47 @@
+# Certificat TLS pour Keycloak emis par cert-manager via Let's Encrypt.
+#
+# cert-manager observe cette ressource Certificate, effectue le defi ACME
+# aupres du ClusterIssuer « letsencrypt-prod » (present dans le cluster) et
+# depose le certificat + la cle privee dans le secret « keycloak-tls-secret »
+# du namespace keycloak. Ce secret est consomme par la ressource Keycloak
+# (spec.http.tlsSecret).
+#
+# Sync-wave « -3 » : le certificat est demande tot pour laisser a cert-manager
+# le temps d'emettre avant le demarrage de Keycloak (sync-wave 5). ArgoCD
+# attend l'etat Ready du Certificate avant de poursuivre les vagues suivantes.
+#
+# Le nom DNS DOIT correspondre a spec.hostname.hostname de la ressource
+# Keycloak. En base : keycloak.apps.myocp.net (surcharge par overlay).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-tls
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  # Secret cree/gere par cert-manager (type kubernetes.io/tls)
+  secretName: keycloak-tls-secret
+  secretTemplate:
+    labels:
+      app: keycloak
+      app.kubernetes.io/part-of: quebec
+  duration: 2160h0m0s    # 90 jours
+  renewBefore: 360h0m0s  # renouvellement 15 jours avant expiration
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+  usages:
+    - server auth
+    - digital signature
+    - key encipherment
+  dnsNames:
+    - keycloak.apps.myocp.net
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+    group: cert-manager.io
