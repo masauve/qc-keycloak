@@ -225,6 +225,9 @@ Argo CD déploie alors, par vagues de synchronisation (voir §6) :
 l'espace de noms, PostgreSQL, le secret BD, le certificat, l'instance Keycloak,
 le pipeline et ses déclencheurs, puis l'import du royaume `quebec`.
 
+![argocd_keycloak](/images/gitops.png)
+
+
 Suivi :
 
 ```bash
@@ -248,10 +251,12 @@ L'instance `Keycloak` référence l'image
 qui doit d'abord être construite par le pipeline. Déclencher une exécution :
 
 ```bash
-# Soit via un push Git (webhook), soit manuellement :
+# Soit via un push Git (webhook), soit manuellement ou dans le UI:
 tkn pipeline start keycloak-build-deploy -n keycloak \
   -w name=source,claimName=workspace-pvc
 ```
+
+![build_deploy_pipeline](/images/tekton.png)
 
 Le pipeline compile le thème + l'action requise, construit et pousse l'image,
 puis met à jour le CR `Keycloak`. Suivi : `tkn pipelinerun logs -f -n keycloak`.
