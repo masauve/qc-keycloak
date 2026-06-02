@@ -1,0 +1,63 @@
+# Royaume d'exemple « quebec » importe par l'operateur Keycloak.
+#
+# Demontre les personnalisations du projet :
+#   - loginTheme: quebec        -> le theme sombre personnalise
+#   - required action           -> accepter-conditions-utilisation (action requise
+#                                  personnalisee), enregistree et marquee comme
+#                                  action par defaut : tout nouvel utilisateur doit
+#                                  l'executer (page accepter-conditions.ftl du theme)
+#                                  avant d'acceder aux services.
+#
+# Aucune donnee secrete n'est versionnee : l'inscription en libre-service est
+# activee. Pour eprouver le flux : ouvrir la page de connexion du royaume quebec,
+# cliquer sur « S'inscrire », puis l'action requise « Accepter les conditions
+# d'utilisation » s'affiche avec le theme quebec.
+#
+# Sync-wave 10 : l'import s'execute apres que l'instance Keycloak soit prete (wave 5).
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakRealmImport
+metadata:
+  name: quebec-realm
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  keycloakCRName: keycloak
+  realm:
+    id: quebec
+    realm: quebec
+    displayName: "Gouvernement du Québec"
+    enabled: true
+
+    # Theme de connexion personnalise
+    loginTheme: quebec
+
+    # Inscription en libre-service (permet de demontrer le flux sans
+    # versionner d'identifiants)
+    registrationAllowed: true
+    registrationEmailAsUsername: false
+    resetPasswordAllowed: true
+    rememberMe: true
+    loginWithEmailAllowed: true
+
+    # Internationalisation : francais par defaut, coherent avec le theme
+    internationalizationEnabled: true
+    supportedLocales:
+      - fr
+      - en
+    defaultLocale: fr
+
+    # Action requise personnalisee : enregistrement + action par defaut.
+    # providerId/alias doivent correspondre a PROVIDER_ID du fournisseur
+    # (AccepterConditionsActionFactory.PROVIDER_ID).
+    requiredActions:
+      - alias: accepter-conditions-utilisation
+        name: "Accepter les conditions d'utilisation"
+        providerId: accepter-conditions-utilisation
+        enabled: true
+        defaultAction: true
+        priority: 100
+        config: {}

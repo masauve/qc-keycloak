@@ -8,3 +8,4 @@ resources:
   - postgresql-statefulset.yaml
   - postgresql-service.yaml
   - keycloak.yaml
+  - realm-quebec.yaml
