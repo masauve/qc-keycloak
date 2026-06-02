@@ -30,5 +30,12 @@ patches:
         path: /spec/dnsNames/0
         value: keycloak.apps.sno.myocp.net
 
-commonLabels:
-  environment: production
+# « labels » avec includeSelectors: false : ajoute l'etiquette d'environnement
+# aux metadonnees SANS l'injecter dans les selecteurs. commonLabels l'aurait
+# ajoutee au selecteur immuable du StatefulSet PostgreSQL :
+#   StatefulSet "keycloak-postgresql" is invalid: spec: Forbidden: updates to
+#   statefulset spec for fields other than ... are forbidden
+labels:
+  - pairs:
+      environment: production
+    includeSelectors: false
