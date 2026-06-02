@@ -435,6 +435,99 @@ hr,
 }
 
 /* ============================================================
+   Espacement en haut de page
+   Le login.css de base n'est pas charge (styles= surcharge dans
+   theme.properties) : on degage l'espace sous le bandeau d'identite
+   fixe, sinon le contenu est colle en haut et recouvert par le bandeau.
+   La page de connexion utilise le gabarit historique « login-pf ».
+   ============================================================ */
+.login-pf-page {
+  padding-top: 3.5rem;
+}
+
+#kc-header {
+  margin-bottom: 1rem;
+}
+
+/* ============================================================
+   Sélecteur de langue (menu déroulant)
+   Sans le login.css de base, le menu reste toujours ouvert et
+   recouvre les champs. On rétablit le comportement ouvert/fermé
+   et on positionne le menu en superposition (et non dans le flux).
+   Gabarit historique : #kc-locale > #kc-locale-dropdown > ul.pf-c-dropdown__menu
+   ============================================================ */
+#kc-locale {
+  position: relative;
+  text-align: right;
+  margin-bottom: 0.75rem;
+}
+
+#kc-locale-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+#kc-current-locale-link {
+  background-color: transparent !important;
+  border: 1px solid var(--gq-bordure) !important;
+  color: var(--gq-texte-principal) !important;
+  border-radius: 4px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+#kc-current-locale-link::after {
+  content: "\25BE"; /* ▾ */
+  margin-left: 0.4rem;
+  color: var(--gq-texte-secondaire);
+}
+
+/* Menu fermé par défaut */
+#kc-locale ul.pf-c-dropdown__menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  min-width: 9rem;
+  list-style: none;
+  padding: 0.25rem 0;
+  background-color: var(--gq-fond-eleve) !important;
+  border: 1px solid var(--gq-bordure);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 1010;
+}
+
+/* Menu ouvert : au survol, au focus clavier ou via le bouton (aria-expanded) */
+#kc-locale-dropdown:hover ul.pf-c-dropdown__menu,
+#kc-locale:focus-within ul.pf-c-dropdown__menu,
+#kc-current-locale-link[aria-expanded="true"] + ul.pf-c-dropdown__menu,
+.pf-c-dropdown.pf-m-expanded > ul.pf-c-dropdown__menu {
+  display: block;
+}
+
+#kc-locale ul.pf-c-dropdown__menu li {
+  list-style: none;
+}
+
+#kc-locale .pf-c-dropdown__menu-item {
+  display: block;
+  padding: 0.45rem 1rem;
+  color: var(--gq-texte-principal) !important;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#kc-locale .pf-c-dropdown__menu-item:hover,
+#kc-locale .pf-c-dropdown__menu-item:focus {
+  background-color: var(--gq-bleu-800) !important;
+  color: var(--gq-bleu-200) !important;
+  text-decoration: none;
+}
+
+/* ============================================================
    Ajustements responsive
    ============================================================ */
 @media (max-width: 576px) {
