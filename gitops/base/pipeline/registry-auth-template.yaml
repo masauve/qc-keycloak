@@ -1,0 +1,49 @@
+# =============================================================================
+# GABARIT / DOCUMENTATION — Authentification a registry.redhat.io pour buildah
+#
+# Ce fichier n'est PAS reference par kustomization.yaml : il ne faut jamais
+# committer de credentials dans Git. C'est une etape d'amorcage manuelle.
+#
+# PROBLEME
+#   La tache « build-image » (buildah) doit telecharger l'image de base
+#   registry.redhat.io/rhbk/keycloak-rhel9:26.4. Ce registre exige une
+#   authentification, sinon :
+#     Error: ... unable to retrieve auth token: invalid username/password:
+#     unauthorized: Please login to the Red Hat Registry ...
+#
+# SOLUTION
+#   Tekton fusionne automatiquement (creds-init) tous les secrets de type
+#   docker rattaches au ServiceAccount « pipeline » en un seul config.json.
+#   Le SA possede deja les creds du registre interne OpenShift (son secret
+#   pipeline-dockercfg-*, utilise pour le PUSH). Il suffit d'y ajouter les
+#   creds registry.redhat.io (pour le PULL). On ne lie donc PAS le workspace
+#   « dockerconfig » de la tache (cela ecraserait le config.json fusionne).
+#
+# AMORCAGE (administrateur du cluster) — reutilise le pull-secret global :
+#
+#   oc get secret/pull-secret -n openshift-config \
+#     -o go-template='{{index .data ".dockerconfigjson" | base64decode}}' \
+#     > /tmp/global-pull-secret.json
+#
+#   oc create secret generic redhat-registry \
+#     --type=kubernetes.io/dockerconfigjson \
+#     --from-file=.dockerconfigjson=/tmp/global-pull-secret.json \
+#     -n keycloak
+#
+#   oc secrets link pipeline redhat-registry -n keycloak --for=mount
+#
+#   rm -f /tmp/global-pull-secret.json
+#
+# VARIANTE — compte de service de registre dedie (access.redhat.com/terms-based-registry) :
+#
+#   oc create secret docker-registry redhat-registry \
+#     --docker-server=registry.redhat.io \
+#     --docker-username='<NUM>|<service-account>' \
+#     --docker-password='<token>' \
+#     -n keycloak
+#   oc secrets link pipeline redhat-registry -n keycloak --for=mount
+#
+# VERIFICATION :
+#   oc get sa pipeline -n keycloak -o jsonpath='{.secrets[*].name}'
+#   # doit lister pipeline-dockercfg-* ET redhat-registry
+# =============================================================================
