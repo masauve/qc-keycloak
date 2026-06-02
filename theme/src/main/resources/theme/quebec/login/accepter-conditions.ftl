@@ -5,15 +5,15 @@
     <#elseif section = "form">
         <div class="gq-conditions-wrapper">
             <#if message?has_content && (message.type != 'warning' || !isAppInitiatedAction??)>
-                <div class="pf-v5-c-alert pf-m-${message.type} pf-m-inline" aria-live="polite">
-                    <div class="pf-v5-c-alert__icon">
+                <div class="pf-c-alert pf-m-${message.type} pf-m-inline" aria-live="polite">
+                    <div class="pf-c-alert__icon">
                         <i class="fas fa-info-circle" aria-hidden="true"></i>
                     </div>
-                    <p class="pf-v5-c-alert__title">${kcSanitize(message.summary)?no_esc}</p>
+                    <p class="pf-c-alert__title">${kcSanitize(message.summary)?no_esc}</p>
                 </div>
             </#if>
 
-            <p class="pf-v5-c-login__main-header-desc" style="margin-bottom: 1rem;">
+            <p class="gq-conditions-soustitre">
                 ${msg("accepterConditionsSousTitre")}
             </p>
 
