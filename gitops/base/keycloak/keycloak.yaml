@@ -37,10 +37,6 @@ spec:
     # du Certificate). Voir overlays/production/kustomization.yaml.
     hostname: keycloak.apps.example.com
     strict: true
-  management:
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: openshift-user-workload-monitoring 
   resources:
     requests:
       memory: "512Mi"
