@@ -38,12 +38,7 @@ spec:
             value: latest
         workspaces:
           - name: source
-            volumeClaimTemplate:
-              spec:
-                accessModes:
-                  - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: 2Gi
+            persistentVolumeClaim:
+              claimName: workspace-pvc
         timeouts:
           pipeline: 1h0m0s

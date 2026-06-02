@@ -8,6 +8,7 @@ namespace: keycloak
 resources:
   - serviceaccount.yaml
   - imagestream.yaml
+  - workspace-pvc.yaml
   - pipeline.yaml
   - triggers/triggerbinding.yaml
   - triggers/triggertemplate.yaml

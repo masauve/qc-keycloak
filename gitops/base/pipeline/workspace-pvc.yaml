@@ -1,0 +1,27 @@
+# PVC partage servant d'espace de travail « source » au pipeline Tekton.
+#
+# Remplace le volumeClaimTemplate (ephemere, recree a chaque PipelineRun) par
+# un PVC persistant et nomme. Tekton epingle les pods du PipelineRun sur le
+# meme noeud (affinity assistant) pour respecter le mode ReadWriteOnce.
+#
+# Remarque : un PVC unique est partage entre les executions ; les PipelineRun
+# concurrents sont donc serialises (un seul a la fois peut monter le volume).
+#
+# Le PVC reste en attente (WaitForFirstConsumer) jusqu'au premier montage ; le
+# health check PVC d'ArgoCD (argocd-cm) considere cet etat comme sain.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: workspace-pvc
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
