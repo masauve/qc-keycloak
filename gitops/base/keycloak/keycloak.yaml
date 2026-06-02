@@ -33,7 +33,9 @@ spec:
     httpsPort: 8443
     tlsSecret: keycloak-tls-secret
   hostname:
-    hostname: keycloak.apps.sno.myocp.net
+    # Gabarit generique — remplace par overlay (doit correspondre au dnsName
+    # du Certificate). Voir overlays/production/kustomization.yaml.
+    hostname: keycloak.apps.example.com
     strict: true
   resources:
     requests:

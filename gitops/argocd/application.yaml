@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/masauve/qc-keycloak.git
     targetRevision: main
-    path: gitops/base
+    path: gitops/overlays/production
   destination:
     server: https://kubernetes.default.svc
     namespace: keycloak
