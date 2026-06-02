@@ -9,22 +9,33 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
+  description: >-
+    Construit l'image RHBK 26.4 personnalisee (theme Quebec + action requise),
+    la pousse dans le registre interne d'OpenShift, puis met a jour la ressource
+    Keycloak. La pipeline n'utilise que des taches fournies par Red Hat,
+    referencees via le resolveur « cluster » dans l'espace de noms
+    openshift-pipelines (les ClusterTasks ayant ete retirees d'OpenShift Pipelines).
   params:
     - name: GIT_URL
       type: string
-      description: URL du dépôt Git contenant le code source
+      description: URL du depot Git contenant le code source
+      default: https://github.com/masauve/qc-keycloak.git
     - name: GIT_REVISION
       type: string
-      description: Branche ou tag Git à utiliser
+      description: Branche, tag ou SHA Git a construire
       default: main
     - name: IMAGE_NAME
       type: string
-      description: Nom de l'image à construire (sans tag)
+      description: Nom de l'image a construire (sans tag)
       default: image-registry.openshift-image-registry.svc:5000/keycloak/keycloak-custom
     - name: IMAGE_TAG
       type: string
-      description: Tag de l'image à construire
+      description: Tag de l'image a construire
       default: latest
+    - name: MAVEN_IMAGE
+      type: string
+      description: Image Maven/JDK utilisee pour la compilation
+      default: registry.access.redhat.com/ubi9/openjdk-17:latest
     - name: KEYCLOAK_NAME
       type: string
       default: keycloak
@@ -33,32 +44,32 @@ spec:
       default: keycloak
   workspaces:
     - name: source
-      description: Espace de travail partagé pour le code source
-    - name: maven-cache
-      description: Cache Maven pour accélérer les compilations successives
+      description: Espace de travail partage pour le code source et les artefacts
+    - name: maven-settings
+      description: Espace de travail pour le fichier settings.xml de Maven
     - name: dockerconfig
-      description: Authentification au registre de conteneurs
+      description: Authentification optionnelle au registre de conteneurs
       optional: true
   results:
     - name: IMAGE_URL
       description: URL de l'image construite
       value: $(tasks.build-image.results.IMAGE_URL)
     - name: IMAGE_DIGEST
-      description: Condensé de l'image construite
+      description: Condense de l'image construite
       value: $(tasks.build-image.results.IMAGE_DIGEST)
     - name: GIT_COMMIT
       description: SHA du commit Git construit
       value: $(tasks.clone.results.commit)
   tasks:
-    # === Étape 1: Cloner le dépôt ===
+    # === Etape 1 : Cloner le depot (tache Red Hat git-clone) ===
     - name: clone
       taskRef:
         resolver: cluster
         params:
           - name: kind
-            value: Task 
+            value: task
           - name: name
-            value: git-clone  
+            value: git-clone
           - name: namespace
             value: openshift-pipelines
       params:
@@ -66,88 +77,102 @@ spec:
           value: $(params.GIT_URL)
         - name: revision
           value: $(params.GIT_REVISION)
+        - name: deleteExisting
+          value: "true"
       workspaces:
         - name: output
           workspace: source
 
-    # === Étape 2a: Compiler le thème (parallèle) ===
-    - name: build-theme
+    # === Etape 2 : Compiler le theme et l'action requise (tache Red Hat maven) ===
+    # Le pom.xml racine est un projet parent multi-modules : un seul « mvn package »
+    # produit theme/target/keycloak-theme-quebec-1.0.0.jar et
+    # required-action/target/keycloak-required-action-1.0.0.jar attendus par le Containerfile.
+    - name: build-maven
       runAfter:
         - clone
       taskRef:
-        name: maven-build
-        kind: Task
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: maven
+          - name: namespace
+            value: openshift-pipelines
       params:
+        - name: MAVEN_IMAGE
+          value: $(params.MAVEN_IMAGE)
         - name: CONTEXT_DIR
-          value: theme
+          value: "."
         - name: GOALS
           value:
-            - package
-            - -DskipTests
             - -B
+            - -DskipTests
+            - package
       workspaces:
         - name: source
           workspace: source
-        - name: maven-cache
-          workspace: maven-cache
+        - name: maven-settings
+          workspace: maven-settings
 
-    # === Étape 2b: Compiler l'action requise (parallèle) ===
-    - name: build-required-action
-      runAfter:
-        - clone
-      taskRef:
-        name: maven-build
-        kind: Task
-      params:
-        - name: CONTEXT_DIR
-          value: required-action
-        - name: GOALS
-          value:
-            - package
-            - -DskipTests
-            - -B
-      workspaces:
-        - name: source
-          workspace: source
-        - name: maven-cache
-          workspace: maven-cache
-
-    # === Étape 3: Construire et pousser l'image de conteneur ===
+    # === Etape 3 : Construire et pousser l'image (tache Red Hat buildah) ===
     - name: build-image
       runAfter:
-        - build-theme
-        - build-required-action
+        - build-maven
       taskRef:
-        name: buildah-build-push
-        kind: Task
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
       params:
         - name: IMAGE
           value: $(params.IMAGE_NAME):$(params.IMAGE_TAG)
         - name: DOCKERFILE
-          value: container/Containerfile
+          value: ./container/Containerfile
         - name: CONTEXT
           value: "."
         - name: TLSVERIFY
           value: "false"
+        - name: FORMAT
+          value: oci
       workspaces:
         - name: source
           workspace: source
         - name: dockerconfig
           workspace: dockerconfig
 
-    # === Étape 4: Mettre à jour l'image Keycloak ===
-    - name: update-keycloak
+    # === Etape 4 : Mettre a jour la ressource Keycloak (tache Red Hat openshift-client) ===
+    - name: deploy
       runAfter:
         - build-image
       taskRef:
-        name: update-keycloak-image
-        kind: Task
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
       params:
-        - name: KEYCLOAK_NAME
-          value: $(params.KEYCLOAK_NAME)
-        - name: KEYCLOAK_NAMESPACE
-          value: $(params.KEYCLOAK_NAMESPACE)
-        - name: IMAGE_URL
-          value: $(tasks.build-image.results.IMAGE_URL)
-        - name: IMAGE_DIGEST
-          value: $(tasks.build-image.results.IMAGE_DIGEST)
+        - name: SCRIPT
+          value: |
+            set -euo pipefail
+
+            IMAGE_WITH_DIGEST="$(tasks.build-image.results.IMAGE_URL)@$(tasks.build-image.results.IMAGE_DIGEST)"
+            echo "Mise a jour de l'image Keycloak vers : ${IMAGE_WITH_DIGEST}"
+
+            oc -n "$(params.KEYCLOAK_NAMESPACE)" patch keycloak "$(params.KEYCLOAK_NAME)" \
+              --type=merge \
+              -p "{\"spec\":{\"image\":\"${IMAGE_WITH_DIGEST}\"}}"
+
+            echo "Attente de la reconciliation de Keycloak..."
+            oc -n "$(params.KEYCLOAK_NAMESPACE)" wait keycloak "$(params.KEYCLOAK_NAME)" \
+              --for=condition=Ready \
+              --timeout=600s
+
+            echo "Keycloak mis a jour avec succes."

@@ -6,12 +6,12 @@ metadata:
 spec:
   params:
     - name: git-url
-      description: URL du dépôt Git
+      description: URL du depot Git
     - name: git-revision
       description: SHA du commit Git
       default: main
     - name: git-ref
-      description: Référence Git (branche/tag)
+      description: Reference Git (branche/tag)
       default: refs/heads/main
   resourcetemplates:
     - apiVersion: tekton.dev/v1
@@ -23,7 +23,8 @@ spec:
           tekton.dev/pipeline: keycloak-build-deploy
           app.kubernetes.io/part-of: quebec
       spec:
-        serviceAccountName: pipeline
+        taskRunTemplate:
+          serviceAccountName: pipeline
         pipelineRef:
           name: keycloak-build-deploy
         params:
@@ -44,13 +45,7 @@ spec:
                 resources:
                   requests:
                     storage: 2Gi
-          - name: maven-cache
-            volumeClaimTemplate:
-              spec:
-                accessModes:
-                  - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: 5Gi
+          - name: maven-settings
+            emptyDir: {}
         timeouts:
           pipeline: 1h0m0s
