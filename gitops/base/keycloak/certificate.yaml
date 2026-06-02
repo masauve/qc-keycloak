@@ -11,7 +11,8 @@
 # attend l'etat Ready du Certificate avant de poursuivre les vagues suivantes.
 #
 # Le nom DNS DOIT correspondre a spec.hostname.hostname de la ressource
-# Keycloak. En base : keycloak.apps.sno.myocp.net.
+# Keycloak. La valeur en base est un GABARIT generique : chaque overlay doit
+# la remplacer par le hostname reel de l'environnement (voir overlays/*/).
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -40,7 +41,8 @@ spec:
     - digital signature
     - key encipherment
   dnsNames:
-    - keycloak.apps.sno.myocp.net
+    # Gabarit generique — remplace par overlay (op replace /spec/dnsNames/0)
+    - keycloak.apps.example.com
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
