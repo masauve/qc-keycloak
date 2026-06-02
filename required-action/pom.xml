@@ -30,6 +30,13 @@
             <version>${keycloak.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- keycloak-core : fournit org.keycloak.Config (Config.Scope), fourni par le serveur -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-core</artifactId>
+            <version>${keycloak.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- Jakarta EE - fourni par le serveur -->
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
