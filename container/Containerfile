@@ -19,13 +19,13 @@ ENV KC_DB=postgres
 # Fonctionnalités activées
 ENV KC_FEATURES=token-exchange,admin-fine-grained-authz
 
-# Cache distribué pour OpenShift/Kubernetes
-ENV KC_CACHE=ispn
-ENV KC_CACHE_STACK=kubernetes
-
 # Métriques et santé
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
+
+# NOTE : cache et cache-stack sont des options d'EXECUTION depuis Keycloak 26.0
+# (elles ne sont plus reconnues par « kc.sh build »). Elles sont configurees
+# au demarrage via l'image finale (ENV ci-dessous) et la ressource Keycloak CR.
 
 WORKDIR /opt/keycloak
 
@@ -43,9 +43,7 @@ RUN /opt/keycloak/bin/kc.sh build \
     --db=postgres \
     --health-enabled=true \
     --metrics-enabled=true \
-    --features=token-exchange,admin-fine-grained-authz \
-    --cache=ispn \
-    --cache-stack=kubernetes
+    --features=token-exchange,admin-fine-grained-authz
 
 # --- Étape 2 : Image finale minimale ---
 FROM registry.redhat.io/rhbk/keycloak-rhel9:26.4
