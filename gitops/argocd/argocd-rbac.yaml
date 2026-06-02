@@ -1,0 +1,41 @@
+# RBAC permettant a l'instance OpenShift GitOps PAR DEFAUT (openshift-gitops)
+# de gerer toutes les ressources de cette application.
+#
+# Contexte :
+#   L'instance par defaut n'a PAS les droits cluster-admin sur les espaces de
+#   noms applicatifs. Comme l'Application utilise ServerSideApply=true, chaque
+#   synchronisation est un PATCH cote serveur ; sans ces droits on obtient :
+#     secrets "keycloak-db-secret" is forbidden: User
+#     "system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller"
+#     cannot patch resource "secrets" ...
+#
+#   Un simple ClusterRole « admin » dans l'espace de noms ne suffit pas : cette
+#   application gere elle-meme un RoleBinding vers le ClusterRole
+#   system:image-builder (pour la tache buildah). La prevention d'escalade de
+#   privileges de Kubernetes interdit a un compte de creer une liaison vers des
+#   droits qu'il ne possede pas. cluster-admin couvre tous ces cas et restaure
+#   le comportement historique de l'instance GitOps par defaut.
+#
+# ArgoCD ne peut pas s'auto-attribuer ces droits (anti-escalade de privileges).
+# Etape d'amorcage a appliquer UNE SEULE FOIS par un administrateur du cluster,
+# AVANT la creation de l'Application :
+#
+#   oc apply -f gitops/argocd/argocd-rbac.yaml
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openshift-gitops-keycloak-cluster-admin
+  labels:
+    app.kubernetes.io/part-of: quebec
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: openshift-gitops-argocd-application-controller
+    namespace: openshift-gitops
+  - kind: ServiceAccount
+    name: openshift-gitops-server
+    namespace: openshift-gitops

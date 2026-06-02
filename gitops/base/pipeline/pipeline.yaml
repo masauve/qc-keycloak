@@ -15,6 +15,8 @@ spec:
     Keycloak. La pipeline n'utilise que des taches fournies par Red Hat,
     referencees via le resolveur « cluster » dans l'espace de noms
     openshift-pipelines (les ClusterTasks ayant ete retirees d'OpenShift Pipelines).
+    Les noms de parametres/workspaces respectent l'interface des taches Red Hat
+    (majuscules pour git-clone/buildah, underscore pour les workspaces).
   params:
     - name: GIT_URL
       type: string
@@ -32,10 +34,6 @@ spec:
       type: string
       description: Tag de l'image a construire
       default: latest
-    - name: MAVEN_IMAGE
-      type: string
-      description: Image Maven/JDK utilisee pour la compilation
-      default: registry.access.redhat.com/ubi9/openjdk-17:latest
     - name: KEYCLOAK_NAME
       type: string
       default: keycloak
@@ -45,8 +43,6 @@ spec:
   workspaces:
     - name: source
       description: Espace de travail partage pour le code source et les artefacts
-    - name: maven-settings
-      description: Espace de travail pour le fichier settings.xml de Maven
     - name: dockerconfig
       description: Authentification optionnelle au registre de conteneurs
       optional: true
@@ -59,7 +55,7 @@ spec:
       value: $(tasks.build-image.results.IMAGE_DIGEST)
     - name: GIT_COMMIT
       description: SHA du commit Git construit
-      value: $(tasks.clone.results.commit)
+      value: $(tasks.clone.results.COMMIT)
   tasks:
     # === Etape 1 : Cloner le depot (tache Red Hat git-clone) ===
     - name: clone
@@ -73,11 +69,11 @@ spec:
           - name: namespace
             value: openshift-pipelines
       params:
-        - name: url
+        - name: URL
           value: $(params.GIT_URL)
-        - name: revision
+        - name: REVISION
           value: $(params.GIT_REVISION)
-        - name: deleteExisting
+        - name: DELETE_EXISTING
           value: "true"
       workspaces:
         - name: output
@@ -87,6 +83,7 @@ spec:
     # Le pom.xml racine est un projet parent multi-modules : un seul « mvn package »
     # produit theme/target/keycloak-theme-quebec-1.0.0.jar et
     # required-action/target/keycloak-required-action-1.0.0.jar attendus par le Containerfile.
+    # La tache maven utilise registry.redhat.io/ubi9/openjdk-17 (Java 17, conforme au projet).
     - name: build-maven
       runAfter:
         - clone
@@ -100,9 +97,7 @@ spec:
           - name: namespace
             value: openshift-pipelines
       params:
-        - name: MAVEN_IMAGE
-          value: $(params.MAVEN_IMAGE)
-        - name: CONTEXT_DIR
+        - name: SUBDIRECTORY
           value: "."
         - name: GOALS
           value:
@@ -112,8 +107,6 @@ spec:
       workspaces:
         - name: source
           workspace: source
-        - name: maven-settings
-          workspace: maven-settings
 
     # === Etape 3 : Construire et pousser l'image (tache Red Hat buildah) ===
     - name: build-image
@@ -135,7 +128,7 @@ spec:
           value: ./container/Containerfile
         - name: CONTEXT
           value: "."
-        - name: TLSVERIFY
+        - name: TLS_VERIFY
           value: "false"
         - name: FORMAT
           value: oci

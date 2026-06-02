@@ -45,7 +45,5 @@ spec:
                 resources:
                   requests:
                     storage: 2Gi
-          - name: maven-settings
-            emptyDir: {}
         timeouts:
           pipeline: 1h0m0s
