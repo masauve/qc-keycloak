@@ -23,6 +23,12 @@ ENV KC_FEATURES=token-exchange,admin-fine-grained-authz
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 
+# Chemin relatif HTTP : option de BUILD. Elle doit etre integree a l'image,
+# sinon avec startOptimized=true Keycloak l'ignore (« values that differ from
+# what is persisted ») et sert sur « / », ce qui fait echouer les sondes de
+# sante de l'operateur (attendues sur /auth) -> CrashLoopBackOff.
+ENV KC_HTTP_RELATIVE_PATH=/auth
+
 # NOTE : cache et cache-stack sont des options d'EXECUTION depuis Keycloak 26.0
 # (elles ne sont plus reconnues par « kc.sh build »). Elles sont configurees
 # au demarrage via l'image finale (ENV ci-dessous) et la ressource Keycloak CR.
@@ -43,7 +49,8 @@ RUN /opt/keycloak/bin/kc.sh build \
     --db=postgres \
     --health-enabled=true \
     --metrics-enabled=true \
-    --features=token-exchange,admin-fine-grained-authz
+    --features=token-exchange,admin-fine-grained-authz \
+    --http-relative-path=/auth
 
 # --- Étape 2 : Image finale minimale ---
 FROM registry.redhat.io/rhbk/keycloak-rhel9:26.4

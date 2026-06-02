@@ -35,7 +35,6 @@ spec:
   hostname:
     hostname: keycloak.apps.myocp.net
     strict: true
-    strictBackchannel: false
   resources:
     requests:
       memory: "512Mi"
