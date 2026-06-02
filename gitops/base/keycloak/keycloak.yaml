@@ -40,7 +40,7 @@ spec:
   management:
     - namespaceSelector:
         matchLabels:
-          kubernetes.io/metadata.name: openshift-user-workload-monitoring  3
+          kubernetes.io/metadata.name: openshift-user-workload-monitoring 
   resources:
     requests:
       memory: "512Mi"
