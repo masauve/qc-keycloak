@@ -48,10 +48,13 @@ spec:
       name: keycloak-postgresql
       jsonPointers:
         - /spec/volumeClaimTemplates
-    # Le controleur Tekton Triggers ajoute spec.namespaceSelector: {} par defaut
-    # (absent du manifeste git) : drift cosmetique permanent.
+    # Le controleur Tekton Triggers complete le spec de l'EventListener avec des
+    # valeurs par defaut absentes du manifeste git (namespaceSelector: {} et,
+    # dans le template du deploiement sink, container name: "" + metadata) :
+    # drift cosmetique permanent.
     - group: triggers.tekton.dev
       kind: EventListener
       name: keycloak-github-webhook
       jsonPointers:
         - /spec/namespaceSelector
+        - /spec/resources/kubernetesResource/spec/template

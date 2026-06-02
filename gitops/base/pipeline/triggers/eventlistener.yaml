@@ -33,7 +33,9 @@ spec:
                 - key: git_ref_short
                   expression: "body.ref.split('/')[2]"
       bindings:
+        # kind explicite : sinon le controleur le complete (TriggerBinding) -> drift
         - ref: keycloak-git-push-binding
+          kind: TriggerBinding
       template:
         ref: keycloak-build-trigger-template
   resources:
