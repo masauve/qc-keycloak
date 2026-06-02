@@ -269,6 +269,9 @@ est importé automatiquement par l'opérateur. Il active :
 - l'**inscription en libre-service** (aucun identifiant versionné) et le
   français par défaut.
 
+Pour tester, l'URL suivant peut être utiliser: https://keycloak.DOMAINE/auth/realms/quebec/account/
+et puis créer un compte.
+
 ### Éprouver le flux
 
 1. Ouvrir la page de connexion du royaume :
