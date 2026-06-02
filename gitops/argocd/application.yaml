@@ -48,10 +48,10 @@ spec:
       name: keycloak-postgresql
       jsonPointers:
         - /spec/volumeClaimTemplates
-    # Le controleur Tekton Triggers complete le spec de l'EventListener
-    # (namespaceSelector, etc.) : ignorer les champs qu'il possede.
+    # Le controleur Tekton Triggers ajoute spec.namespaceSelector: {} par defaut
+    # (absent du manifeste git) : drift cosmetique permanent.
     - group: triggers.tekton.dev
       kind: EventListener
       name: keycloak-github-webhook
-      managedFieldsManagers:
-        - controller
+      jsonPointers:
+        - /spec/namespaceSelector
