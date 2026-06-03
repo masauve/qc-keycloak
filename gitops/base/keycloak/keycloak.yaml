@@ -73,9 +73,11 @@ spec:
     # « troubleshooting ».
     - name: http-metrics-histograms-enabled
       value: "true"
+    - name: metrics-enabled
+      value: "true"
   # L'operateur RHBK 26.4 cree automatiquement un ServiceMonitor lorsque les
   # metriques sont actives. On le desactive ici car ce depot fournit son propre
   # ServiceMonitor declaratif (gitops/base/monitoring/), evitant un double
   # scraping (series dupliquees).
-  serviceMonitor:
-    enabled: false
+  #serviceMonitor:
+  #  enabled: false
