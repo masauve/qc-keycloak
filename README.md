@@ -452,19 +452,26 @@ oc -n openshift-user-workload-monitoring get pods
 
 ### 9.2 Métriques Keycloak et `ServiceMonitor`
 
-Les options de **build** `metrics-enabled` et `health-enabled` sont déjà
-intégrées à l'image ([`container/Containerfile`](container/Containerfile)). Les
-métriques sont exposées sur l'**interface de gestion** (port `9000`, chemin
-`/metrics`), distincte du port applicatif et **non** affectée par
-`http-relative-path`.
+Les options de **build** `metrics-enabled`, `health-enabled` et
+`event-metrics-user-enabled` sont intégrées à l'**image**
+([`container/Containerfile`](container/Containerfile)). Les métriques sont
+exposées sur l'**interface de gestion** (port `9000`, chemin `/metrics`),
+distincte du port applicatif et **non** affectée par `http-relative-path`.
 
-Le CR Keycloak ([`keycloak.yaml`](gitops/base/keycloak/keycloak.yaml)) ajoute
-deux options d'**exécution** (effectives malgré `startOptimized: true`) :
+> ⚠️ Les options de **build** ne doivent **pas** figurer dans `additionalOptions`
+> du CR : avec `startOptimized: true` l'opérateur ne relance pas `kc.sh build`,
+> et Keycloak refuse alors de démarrer (« *build time options have values that
+> differ from what is persisted* »). Toute modification (p. ex. activer
+> `event-metrics-user-enabled`) exige donc une **reconstruction de l'image**
+> (relancer le pipeline, §3.7).
 
-| Option | Tableau de bord concerné |
-|--------|--------------------------|
-| `http-metrics-histograms-enabled=true` | *Troubleshooting* (cartes de latence) |
-| `event-metrics-user-enabled=true` | *Capacity planning* (connexions, inscriptions…) |
+Le CR Keycloak ([`keycloak.yaml`](gitops/base/keycloak/keycloak.yaml)) n'ajoute
+qu'une option d'**exécution** (effective malgré `startOptimized: true`) :
+
+| Option | Type | Tableau de bord concerné |
+|--------|------|--------------------------|
+| `http-metrics-histograms-enabled=true` | exécution (CR) | *Troubleshooting* (cartes de latence) |
+| `event-metrics-user-enabled=true` | **build** (image) | *Capacity planning* (connexions, inscriptions…) |
 
 Depuis **RHBK 26.4**, l'opérateur crée automatiquement un `ServiceMonitor`
 lorsque les métriques sont actives. Ce dépôt fournit **son propre

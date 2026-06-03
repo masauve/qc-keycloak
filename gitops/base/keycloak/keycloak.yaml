@@ -60,19 +60,18 @@ spec:
     - name: http-relative-path
       value: /auth
     # --- Observabilite ---
-    # metrics-enabled / health-enabled sont des options de BUILD : deja integrees
-    # a l'image (voir container/Containerfile). Les metriques sont exposees sur
-    # l'interface de gestion (port 9000, chemin /metrics), independante de
-    # http-relative-path. Les deux options suivantes sont des options d'EXECUTION
-    # et prennent donc effet malgre startOptimized: true.
+    # metrics-enabled / health-enabled / event-metrics-user-enabled sont des
+    # options de BUILD : integrees a l'image (voir container/Containerfile).
+    # Avec startOptimized: true, les placer ici declenche « build time options
+    # have values that differ from what is persisted ... will NOT be used » et
+    # empeche le demarrage. Les metriques sont exposees sur l'interface de
+    # gestion (port 9000, chemin /metrics), independante de http-relative-path.
     #
-    # Histogrammes HTTP : active les seaux de percentiles necessaires aux cartes
-    # de latence (heatmaps) du tableau de bord « troubleshooting ».
+    # http-metrics-histograms-enabled est en revanche une option d'EXECUTION :
+    # elle prend effet malgre startOptimized: true. Active les seaux de
+    # percentiles necessaires aux cartes de latence du tableau de bord
+    # « troubleshooting ».
     - name: http-metrics-histograms-enabled
-      value: "true"
-    # Metriques d'evenements utilisateur : requises par le tableau de bord
-    # « capacity planning » (connexions, inscriptions, etc.).
-    - name: event-metrics-user-enabled
       value: "true"
   # L'operateur RHBK 26.4 cree automatiquement un ServiceMonitor lorsque les
   # metriques sont actives. On le desactive ici car ce depot fournit son propre
