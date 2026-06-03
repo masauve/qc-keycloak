@@ -22,8 +22,12 @@ spec:
     matchLabels:
       monitoring: keycloak
   endpoints:
+    # /auth/metrics et non /metrics : http-relative-path=/auth s'applique AUSSI
+    # a l'interface de gestion (port 9000). C'est pourquoi les sondes de sante de
+    # l'operateur sont sur /auth/health/* (voir container/Containerfile). Un
+    # path /metrics renvoie 404 (« Scrape failed: server returned HTTP 404 »).
     - port: management
-      path: /metrics
+      path: /auth/metrics
       scheme: https
       interval: 30s
       scrapeTimeout: 10s

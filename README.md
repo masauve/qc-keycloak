@@ -408,7 +408,7 @@ Points d'attention fréquents :
 Cette section met en place une chaîne de bout en bout :
 
 ```
-Keycloak (/metrics, port 9000)
+Keycloak (/auth/metrics, port 9000)
    │  scrape (ServiceMonitor)
    ▼
 Prometheus user-workload-monitoring  ──►  Thanos Querier (openshift-monitoring)
@@ -459,8 +459,10 @@ oc -n openshift-user-workload-monitoring get pods
 Les options de **build** `metrics-enabled`, `health-enabled` et
 `event-metrics-user-enabled` sont intégrées à l'**image**
 ([`container/Containerfile`](container/Containerfile)). Les métriques sont
-exposées sur l'**interface de gestion** (port `9000`, chemin `/metrics`),
-distincte du port applicatif et **non** affectée par `http-relative-path`.
+exposées sur l'**interface de gestion** (port `9000`), distincte du port
+applicatif. ⚠️ `http-relative-path=/auth` s'applique **aussi** à l'interface de
+gestion : le chemin réel est donc **`/auth/metrics`** (et les sondes de santé de
+l'opérateur sur `/auth/health/*`). Un scrape sur `/metrics` renvoie `404`.
 
 > ⚠️ Les options de **build** ne doivent **pas** figurer dans `additionalOptions`
 > du CR : avec `startOptimized: true` l'opérateur ne relance pas `kc.sh build`,
@@ -486,8 +488,8 @@ lorsque les métriques sont actives. Ce dépôt fournit **son propre
   — `Service` exposant le port `management` (9000), car le `Service` de
   l'opérateur n'expose que 8443/8080 ;
 - [`keycloak-servicemonitor.yaml`](gitops/base/monitoring/keycloak-servicemonitor.yaml)
-  — scrape `https://…:9000/metrics` toutes les 30 s (`insecureSkipVerify` car
-  l'interface de gestion sert le certificat interne).
+  — scrape `https://…:9000/auth/metrics` toutes les 30 s (`insecureSkipVerify`
+  car l'interface de gestion sert le certificat interne).
 
 Vérification :
 
