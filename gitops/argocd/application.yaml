@@ -12,7 +12,9 @@ spec:
   project: default
   source:
     repoURL: https://github.com/masauve/qc-keycloak.git
-    targetRevision: main
+    # Branche de test pour l'observabilité (§9). À repasser sur « main » après
+    # fusion de la PR feat/observability-grafana-uwm.
+    targetRevision: feat/observability-grafana-uwm
     path: gitops/overlays/production
   destination:
     server: https://kubernetes.default.svc

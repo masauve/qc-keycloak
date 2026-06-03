@@ -1,0 +1,50 @@
+# RBAC permettant a Grafana d'interroger le Thanos Querier d'OpenShift
+# (monitoring de la plateforme + user-workload-monitoring) comme source de
+# donnees Prometheus.
+#
+# 1. Un compte de service dedie.
+# 2. Le ClusterRole « cluster-monitoring-view » lui donne l'acces en lecture aux
+#    metriques via Thanos Querier (port 9091).
+# 3. Un Secret de type service-account-token : depuis OpenShift 4.11 les jetons
+#    de compte de service ne sont plus generes automatiquement ; on en demande
+#    un explicitement. Son champ « token » est injecte dans la source de donnees
+#    Grafana (voir grafana-datasource.yaml).
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana-sa
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "14"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: grafana-cluster-monitoring-view
+  labels:
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "14"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: grafana-sa
+    namespace: keycloak
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-sa-token
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    kubernetes.io/service-account.name: grafana-sa
+    argocd.argoproj.io/sync-wave: "14"
+type: kubernetes.io/service-account-token

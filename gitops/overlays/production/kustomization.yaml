@@ -4,6 +4,13 @@ namespace: keycloak
 
 resources:
   - ../../base
+  # Le monitoring est reference ici (overlay) plutot que dans base/ a dessein :
+  # base/kustomization.yaml utilise « commonLabels », qui injecte ses etiquettes
+  # dans les SELECTEURS. Le Service keycloak-metrics cible des pods geres par
+  # l'operateur (etiquette app=keycloak), qui ne portent pas managed-by=argocd ;
+  # passer par l'overlay (« labels » avec includeSelectors: false) preserve donc
+  # son selecteur. Voir gitops/base/monitoring/.
+  - ../../base/monitoring
 
 # Remplacer le domaine OpenShift pour la production
 patches:

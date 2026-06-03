@@ -1,0 +1,40 @@
+# Source de donnees Prometheus pointant vers le Thanos Querier d'OpenShift.
+# Thanos Querier agrege les metriques de la plateforme ET de
+# user-workload-monitoring ; le port 9091 applique le RBAC Kubernetes
+# (cluster-monitoring-view), d'ou l'authentification par jeton porteur.
+#
+# Le jeton du compte de service grafana-sa (Secret grafana-sa-token) est injecte
+# dans l'en-tete Authorization via valuesFrom : la valeur du Secret remplace le
+# marqueur ${token} a la cible secureJsonData.httpHeaderValue1.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: openshift-monitoring
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "16"
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  valuesFrom:
+    - targetPath: secureJsonData.httpHeaderValue1
+      valueFrom:
+        secretKeyRef:
+          name: grafana-sa-token
+          key: token
+  datasource:
+    name: Prometheus
+    uid: openshift-monitoring
+    type: prometheus
+    access: proxy
+    url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+    isDefault: true
+    jsonData:
+      httpHeaderName1: "Authorization"
+      tlsSkipVerify: true
+      timeInterval: "5s"
+    secureJsonData:
+      httpHeaderValue1: "Bearer ${token}"

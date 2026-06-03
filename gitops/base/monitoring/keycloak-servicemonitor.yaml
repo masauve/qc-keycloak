@@ -1,0 +1,31 @@
+# ServiceMonitor declaratif pour Keycloak. Pris en charge par le Prometheus de
+# « user-workload-monitoring » d'OpenShift (active via uwm.yaml). Il cible le
+# port « management » (9000) du Service keycloak-metrics.
+#
+# L'interface de gestion herite de la configuration TLS du serveur principal :
+# comme http.httpEnabled=false et un tlsSecret sont definis sur le CR Keycloak,
+# le port 9000 est servi en HTTPS. On utilise insecureSkipVerify (comme le
+# ServiceMonitor genere par l'operateur) ; pour une verification stricte,
+# remplacer par un bloc « ca »/« serverName » referencant keycloak-tls-secret.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  selector:
+    matchLabels:
+      monitoring: keycloak
+  endpoints:
+    - port: management
+      path: /metrics
+      scheme: https
+      interval: 30s
+      scrapeTimeout: 10s
+      tlsConfig:
+        insecureSkipVerify: true
