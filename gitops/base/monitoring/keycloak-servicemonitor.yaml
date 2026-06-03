@@ -2,11 +2,10 @@
 # « user-workload-monitoring » d'OpenShift (active via uwm.yaml). Il cible le
 # port « management » (9000) du Service keycloak-metrics.
 #
-# L'interface de gestion herite de la configuration TLS du serveur principal :
-# comme http.httpEnabled=false et un tlsSecret sont definis sur le CR Keycloak,
-# le port 9000 est servi en HTTPS. On utilise insecureSkipVerify (comme le
-# ServiceMonitor genere par l'operateur) ; pour une verification stricte,
-# remplacer par un bloc « ca »/« serverName » referencant keycloak-tls-secret.
+# scheme: http -- l'operateur sert l'interface de GESTION (port 9000) en clair,
+# meme lorsque le serveur principal est en HTTPS (tlsSecret). Scraper en HTTPS
+# echoue alors avec « http: server gave HTTP response to HTTPS client ». Le
+# trafic reste interne au reseau du cluster.
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -28,8 +27,6 @@ spec:
     # path /metrics renvoie 404 (« Scrape failed: server returned HTTP 404 »).
     - port: management
       path: /auth/metrics
-      scheme: https
+      scheme: http
       interval: 30s
       scrapeTimeout: 10s
-      tlsConfig:
-        insecureSkipVerify: true

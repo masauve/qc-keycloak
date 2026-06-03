@@ -488,8 +488,10 @@ lorsque les métriques sont actives. Ce dépôt fournit **son propre
   — `Service` exposant le port `management` (9000), car le `Service` de
   l'opérateur n'expose que 8443/8080 ;
 - [`keycloak-servicemonitor.yaml`](gitops/base/monitoring/keycloak-servicemonitor.yaml)
-  — scrape `https://…:9000/auth/metrics` toutes les 30 s (`insecureSkipVerify`
-  car l'interface de gestion sert le certificat interne).
+  — scrape `http://…:9000/auth/metrics` toutes les 30 s. ⚠️ `scheme: http` :
+  l'opérateur sert l'interface de gestion **en clair** même quand le serveur
+  principal est en HTTPS ; scraper en HTTPS échoue (« *server gave HTTP response
+  to HTTPS client* »). Le trafic reste interne au cluster.
 
 Vérification :
 
