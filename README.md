@@ -557,6 +557,28 @@ oc -n keycloak get pods -l app.kubernetes.io/managed-by=grafana-operator
 
 Connectez-vous avec les identifiants du secret `grafana-admin-credentials`,
 puis ouvrez les tableaux de bord *Keycloak capacity planning* et *Keycloak
-troubleshooting*. Si les graphiques sont vides, vérifier dans l'ordre : UWM
-actif (§9.1) → cible `keycloak` « up » (§9.2) → source de données Grafana
-« working » (jeton/RBAC §9.3).
+troubleshooting*.
+
+Si les graphiques sont vides, vérifier dans l'ordre :
+
+1. **Variables du tableau de bord** — en haut de chaque tableau de bord,
+   sélectionner `namespace = keycloak` (et `realm` pour *capacity planning*). À
+   l'import, `$namespace` prend par défaut la première valeur, rarement
+   `keycloak`, ce qui vide tous les panneaux.
+2. **UWM actif** (§9.1) et namespace non étiqueté `cluster-monitoring`.
+3. **Cible `keycloak` « up »** (§9.2). Dans *Grafana → Explore* :
+   `up{namespace="keycloak"}` doit renvoyer une série par pod.
+4. **Source de données « working »** (jeton/RBAC §9.3).
+5. ***Capacity planning* vide** — ce tableau de bord interroge
+   `keycloak_user_events_total` (métriques d'événements). Tant que l'image n'a
+   pas été reconstruite avec `event-metrics-user-enabled` (option de **build**,
+   §9.2), ces séries n'existent pas et la variable `realm` reste vide. Le
+   tableau de bord *troubleshooting* ne dépend pas de ces métriques.
+
+> **Pièges rencontrés et résolus** (consignés ici pour mémoire) :
+> | Symptôme | Cause | Correctif |
+> |----------|-------|-----------|
+> | Keycloak ne démarre pas (« *build time options … differ* ») | option de build dans `additionalOptions` | l'intégrer à l'image (§9.2) |
+> | `ServiceMonitor` absent des cibles | namespace étiqueté `cluster-monitoring` | retirer l'étiquette (§9.1) |
+> | Scrape `404` | chemin `/metrics` au lieu de `/auth/metrics` | `http-relative-path` s'applique à la gestion (§9.2) |
+> | Scrape « *HTTP response to HTTPS client* » | interface de gestion en clair | `scheme: http` (§9.2) |
