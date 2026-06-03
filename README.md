@@ -467,9 +467,15 @@ oc -n openshift-user-workload-monitoring get pods
 
 ### 9.2 Métriques Keycloak et `ServiceMonitor`
 
-Les options de **build** `metrics-enabled`, `health-enabled` et
-`event-metrics-user-enabled` sont intégrées à l'**image**
-([`container/Containerfile`](container/Containerfile)). Les métriques sont
+Les options de **build** `metrics-enabled`, `health-enabled`,
+`event-metrics-user-enabled` et la fonctionnalité `user-event-metrics` (ajoutée
+à `--features`) sont intégrées à l'**image**
+([`container/Containerfile`](container/Containerfile)). ⚠️
+`event-metrics-user-enabled` **n'a aucun effet sans la fonctionnalité
+`user-event-metrics`** : sans elle, `keycloak_user_events_total` n'est jamais
+exposé et le sélecteur `realm` du tableau de bord *capacity planning* reste vide.
+La valeur de `features` du CR doit rester identique à celle de l'image. Les
+métriques sont
 exposées sur l'**interface de gestion** (port `9000`), distincte du port
 applicatif. ⚠️ `http-relative-path=/auth` s'applique **aussi** à l'interface de
 gestion : le chemin réel est donc **`/auth/metrics`** (et les sondes de santé de

@@ -47,8 +47,13 @@ spec:
   additionalOptions:
     - name: log-level
       value: INFO
+    # user-event-metrics : requis pour que event-metrics-user-enabled (image)
+    # produise keycloak_user_events_total (tableau « capacity planning »).
+    # « features » est une option de BUILD : cette valeur doit correspondre a
+    # celle integree a l'image (container/Containerfile), sinon « build time
+    # options ... differ from what is persisted » et Keycloak ne demarre pas.
     - name: features
-      value: "token-exchange,admin-fine-grained-authz"
+      value: "token-exchange,admin-fine-grained-authz,user-event-metrics"
     - name: cache
       value: ispn
     # jdbc-ping : decouverte du cluster via la base PostgreSQL existante.

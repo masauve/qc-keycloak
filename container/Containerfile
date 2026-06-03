@@ -17,7 +17,9 @@ FROM registry.redhat.io/rhbk/keycloak-rhel9:26.4 AS builder
 ENV KC_DB=postgres
 
 # Fonctionnalités activées
-ENV KC_FEATURES=token-exchange,admin-fine-grained-authz
+# user-event-metrics : prerequis de event-metrics-user-enabled (sinon l'option
+# reste sans effet et keycloak_user_events_total n'est jamais expose).
+ENV KC_FEATURES=token-exchange,admin-fine-grained-authz,user-event-metrics
 
 # Métriques et santé
 ENV KC_HEALTH_ENABLED=true
@@ -55,7 +57,7 @@ RUN /opt/keycloak/bin/kc.sh build \
     --health-enabled=true \
     --metrics-enabled=true \
     --event-metrics-user-enabled=true \
-    --features=token-exchange,admin-fine-grained-authz \
+    --features=token-exchange,admin-fine-grained-authz,user-event-metrics \
     --http-relative-path=/auth
 
 # --- Étape 2 : Image finale minimale ---
