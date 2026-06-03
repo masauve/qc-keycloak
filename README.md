@@ -75,6 +75,17 @@ ayant été retirées d'OpenShift Pipelines).
 >   sourceNamespace: openshift-marketplace
 > ```
 
+Il faut également ajouter un secret pour le mot de passe admin de Grafana
+
+```bash
+oc create secret generic grafana-admin-credentials -n keycloak \
+  --from-literal=GF_SECURITY_ADMIN_USER=admin \
+  --from-literal=GF_SECURITY_ADMIN_PASSWORD='MOT_DE_PASSE_ADMIN' \
+  --dry-run=client -o yaml | oc apply -f -
+
+```
+
+
 ### 2.2 Émetteur de certificat (ClusterIssuer)
 
 Un **`ClusterIssuer` nommé `letsencrypt-prod`** doit exister et être pleinement
@@ -541,6 +552,10 @@ le JSON à l'URL indiquée) :
 
 L'entrée `__inputs` `DS_PROMETHEUS` de chaque tableau de bord est reliée à la
 source `Prometheus` via le champ `datasources` du CR `GrafanaDashboard`.
+
+
+![tableau_grafana](/images/grafana.png)
+
 
 ### 9.5 Accès et vérification
 
