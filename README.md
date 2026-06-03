@@ -446,9 +446,13 @@ oc -n openshift-user-workload-monitoring get pods
 # prometheus-user-workload-* et prometheus-operator-* doivent être Running
 ```
 
-> L'espace de noms `keycloak` porte déjà l'étiquette
-> `openshift.io/cluster-monitoring: "true"` ([`namespace.yaml`](gitops/base/namespace.yaml)) ;
-> avec UWM actif, Prometheus prend en compte ses `ServiceMonitor`.
+> ⚠️ L'espace de noms `keycloak` **ne doit pas** porter l'étiquette
+> `openshift.io/cluster-monitoring: "true"` ([`namespace.yaml`](gitops/base/namespace.yaml)).
+> Cette étiquette rattache l'espace de noms au monitoring de **plateforme**
+> (`prometheus-k8s`) et l'**exclut** du User Workload Monitoring : le
+> `ServiceMonitor` ne serait alors scrapé par personne (cible absente de
+> *Observe → Targets*). UWM surveille automatiquement les projets utilisateur
+> qui ne portent **pas** cette étiquette ; aucune étiquette n'est requise.
 
 ### 9.2 Métriques Keycloak et `ServiceMonitor`
 
