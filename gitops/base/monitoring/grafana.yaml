@@ -1,0 +1,41 @@
+# Instance Grafana geree par l'operateur Grafana (grafana-operator v5,
+# groupe d'API grafana.integreatly.org/v1beta1).
+#
+# L'etiquette « dashboards: grafana » sert de cible aux CR GrafanaDatasource et
+# GrafanaDashboard via leur instanceSelector.
+#
+# Les identifiants admin proviennent du secret grafana-admin-credentials
+# (grafana-secret-template.yaml), injectes en variables d'environnement.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: keycloak-grafana
+  namespace: keycloak
+  labels:
+    dashboards: grafana
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+spec:
+  config:
+    log:
+      mode: "console"
+    auth:
+      disable_login_form: "false"
+  deployment:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: grafana
+              env:
+                - name: GF_SECURITY_ADMIN_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: grafana-admin-credentials
+                      key: GF_SECURITY_ADMIN_USER
+                - name: GF_SECURITY_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: grafana-admin-credentials
+                      key: GF_SECURITY_ADMIN_PASSWORD

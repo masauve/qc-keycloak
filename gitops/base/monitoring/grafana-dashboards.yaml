@@ -1,0 +1,44 @@
+# Tableaux de bord Keycloak officiels, recuperes directement depuis le depot
+# https://github.com/keycloak/keycloak-grafana-dashboard
+#
+# L'operateur telecharge le JSON a l'URL indiquee et l'importe dans Grafana.
+# Chaque tableau de bord declare une entree __inputs « DS_PROMETHEUS » ; on la
+# relie a la source de donnees « Prometheus » (grafana-datasource.yaml).
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: keycloak-capacity-planning
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "16"
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  resyncPeriod: 30m
+  datasources:
+    - inputName: "DS_PROMETHEUS"
+      datasourceName: "Prometheus"
+  url: "https://raw.githubusercontent.com/keycloak/keycloak-grafana-dashboard/main/dashboards/keycloak-capacity-planning-dashboard.json"
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: keycloak-troubleshooting
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "16"
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  resyncPeriod: 30m
+  datasources:
+    - inputName: "DS_PROMETHEUS"
+      datasourceName: "Prometheus"
+  url: "https://raw.githubusercontent.com/keycloak/keycloak-grafana-dashboard/main/dashboards/keycloak-troubleshooting-dashboard.json"

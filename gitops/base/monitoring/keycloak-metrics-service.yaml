@@ -1,0 +1,26 @@
+# Service dedie exposant l'interface de GESTION de Keycloak (port 9000), sur
+# laquelle l'endpoint /metrics est servi. Le Service cree par l'operateur
+# (keycloak-service) n'expose que 8443/8080 ; on cree donc ce Service pour
+# disposer d'un port nomme « management » que le ServiceMonitor peut cibler.
+#
+# Le selecteur app=keycloak correspond aux pods de l'instance Keycloak.
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-metrics
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+    monitoring: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  type: ClusterIP
+  selector:
+    app: keycloak
+  ports:
+    - name: management
+      port: 9000
+      targetPort: 9000
+      protocol: TCP

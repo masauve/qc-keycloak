@@ -1,0 +1,22 @@
+# Route OpenShift exposant l'interface web de Grafana.
+# L'operateur cree un Service « <nom>-service » (port 3000) pour l'instance
+# Grafana ; on l'expose ici en HTTPS (terminaison edge).
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: keycloak-grafana
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+spec:
+  to:
+    kind: Service
+    name: keycloak-grafana-service
+    weight: 100
+  port:
+    targetPort: 3000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

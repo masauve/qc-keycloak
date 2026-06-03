@@ -1,0 +1,32 @@
+# ServiceMonitor declaratif pour Keycloak. Pris en charge par le Prometheus de
+# « user-workload-monitoring » d'OpenShift (active via uwm.yaml). Il cible le
+# port « management » (9000) du Service keycloak-metrics.
+#
+# scheme: http -- l'operateur sert l'interface de GESTION (port 9000) en clair,
+# meme lorsque le serveur principal est en HTTPS (tlsSecret). Scraper en HTTPS
+# echoue alors avec « http: server gave HTTP response to HTTPS client ». Le
+# trafic reste interne au reseau du cluster.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: quebec
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  selector:
+    matchLabels:
+      monitoring: keycloak
+  endpoints:
+    # /auth/metrics et non /metrics : http-relative-path=/auth s'applique AUSSI
+    # a l'interface de gestion (port 9000). C'est pourquoi les sondes de sante de
+    # l'operateur sont sur /auth/health/* (voir container/Containerfile). Un
+    # path /metrics renvoie 404 (« Scrape failed: server returned HTTP 404 »).
+    - port: management
+      path: /auth/metrics
+      scheme: http
+      interval: 30s
+      scrapeTimeout: 10s

@@ -4,6 +4,10 @@ metadata:
   name: keycloak
   labels:
     app.kubernetes.io/part-of: quebec
-    openshift.io/cluster-monitoring: "true"
+    # NE PAS ajouter openshift.io/cluster-monitoring: "true" : cette etiquette
+    # rattache l'espace de noms au monitoring de PLATEFORME (prometheus-k8s) et
+    # l'EXCLUT du User Workload Monitoring. UWM surveille automatiquement les
+    # projets utilisateur NON etiquetes ainsi ; c'est ce qui permet a notre
+    # ServiceMonitor (gitops/base/monitoring/) d'etre decouvert. Voir §9.1.
   annotations:
     argocd.argoproj.io/sync-wave: "-10"

@@ -59,3 +59,25 @@ spec:
       value: jdbc-ping
     - name: http-relative-path
       value: /auth
+    # --- Observabilite ---
+    # metrics-enabled / health-enabled / event-metrics-user-enabled sont des
+    # options de BUILD : integrees a l'image (voir container/Containerfile).
+    # Avec startOptimized: true, les placer ici declenche « build time options
+    # have values that differ from what is persisted ... will NOT be used » et
+    # empeche le demarrage -- ne PAS ajouter « metrics-enabled » ici.
+    # Les metriques sont exposees sur l'interface de gestion (port 9000) ;
+    # http-relative-path=/auth s'y applique aussi, d'ou le chemin /auth/metrics.
+    #
+    # http-metrics-histograms-enabled est en revanche une option d'EXECUTION :
+    # elle prend effet malgre startOptimized: true. Active les seaux de
+    # percentiles necessaires aux cartes de latence du tableau de bord
+    # « troubleshooting ».
+    - name: http-metrics-histograms-enabled
+      value: "true"
+  # L'operateur RHBK 26.4 cree automatiquement un ServiceMonitor lorsque
+  # « metrics-enabled » figure dans le CR. On le DESACTIVE car ce depot fournit
+  # son propre ServiceMonitor declaratif (gitops/base/monitoring/) au chemin
+  # /auth/metrics ; sans cela, les deux scrapent le meme endpoint -> series
+  # dupliquees et double comptage (sum by(pod) ...).
+  serviceMonitor:
+    enabled: false

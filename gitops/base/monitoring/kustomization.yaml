@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: keycloak
+
+resources:
+  # Integration du monitoring Keycloak (user-workload-monitoring OpenShift)
+  - keycloak-metrics-service.yaml
+  - keycloak-servicemonitor.yaml
+  # Grafana (operateur) + source de donnees + tableaux de bord
+  - grafana-rbac.yaml
+  #- grafana-secret-template.yaml
+  - grafana.yaml
+  - grafana-route.yaml
+  - grafana-datasource.yaml
+  - grafana-dashboards.yaml

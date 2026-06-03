@@ -53,10 +53,27 @@ ayant été retirées d'OpenShift Pipelines).
 | **OpenShift GitOps** (Argo CD) | Synchronise le dépôt Git vers le cluster | `openshift-gitops` |
 | **OpenShift Pipelines** (Tekton) | Fournit les tâches Red Hat et exécute le pipeline | `openshift-pipelines` |
 | **cert-manager** | Émet le certificat TLS de Keycloak | `cert-manager` |
+| **Grafana Operator** (communautaire, `grafana-operator` v5) | Gère les ressources `Grafana`, `GrafanaDatasource`, `GrafanaDashboard` | `keycloak` (ou global) |
 
 > On suppose que **tous ces opérateurs sont déjà installés** et que leurs
 > instances par défaut fonctionnent (instance Argo CD `openshift-gitops`,
 > opérateur Pipelines avec les tâches dans `openshift-pipelines`).
+>
+> Le **Grafana Operator** n'est requis que pour l'observabilité (§9). Il fournit
+> les CRD `grafana.integreatly.org/v1beta1`. Installation via OperatorHub ou :
+>
+> ```yaml
+> apiVersion: operators.coreos.com/v1alpha1
+> kind: Subscription
+> metadata:
+>   name: grafana-operator
+>   namespace: keycloak
+> spec:
+>   channel: v5
+>   name: grafana-operator
+>   source: community-operators
+>   sourceNamespace: openshift-marketplace
+> ```
 
 ### 2.2 Émetteur de certificat (ClusterIssuer)
 
@@ -315,8 +332,10 @@ gitops/
     namespace.yaml
     keycloak/                     PostgreSQL, Keycloak CR, Certificate, RealmImport, secret (gabarit)
     pipeline/                     SA + RBAC, ImageStream, PVC, Pipeline, déclencheurs
+    monitoring/                   ServiceMonitor Keycloak + Grafana (CR, source, tableaux de bord) — §9
   overlays/
     production/                   Surcharge : domaine, nb d'instances, étiquette d'environnement
+uwm.yaml                          Amorçage : active UserWorkloadMonitoring (§9.1)
 ```
 
 ---
@@ -330,7 +349,11 @@ gitops/
 | `0`/`1` | Compte de service + RBAC, ImageStream, `workspace-pvc` |
 | `2`   | Pipeline Tekton et tâches |
 | `5`   | Instance `Keycloak` |
+| `6`   | `Service` métriques + `ServiceMonitor` Keycloak (§9.2) |
 | `10`  | `KeycloakRealmImport` quebec (après que Keycloak soit prêt) |
+| `14`  | RBAC Grafana (SA, jeton, `cluster-monitoring-view`), secret admin (§9.3) |
+| `15`  | Instance `Grafana` + `Route` |
+| `16`  | `GrafanaDatasource` (Thanos) + `GrafanaDashboard` (×2) |
 
 ---
 
@@ -377,3 +400,185 @@ Points d'attention fréquents :
 - **Action requise** ([`required-action/`](required-action/)) — fournisseur
   `accepter-conditions-utilisation` qui affiche `accepter-conditions.ftl` et
   exige un clic d'acceptation avant l'accès.
+
+---
+
+## 9. Observabilité — monitoring et Grafana
+
+Cette section met en place une chaîne de bout en bout :
+
+```
+Keycloak (/auth/metrics, port 9000)
+   │  scrape (ServiceMonitor)
+   ▼
+Prometheus user-workload-monitoring  ──►  Thanos Querier (openshift-monitoring)
+                                              │  requêtes PromQL (jeton SA, port 9091)
+                                              ▼
+                                           Grafana  ◄── tableaux de bord Keycloak officiels
+```
+
+Les manifestes vivent dans [`gitops/base/monitoring/`](gitops/base/monitoring/)
+et sont synchronisés par Argo CD. **Seule l'activation de
+UserWorkloadMonitoring (§9.1) est une opération d'amorçage hors bande**, car
+elle modifie une `ConfigMap` de l'espace de noms `openshift-monitoring`.
+
+> Note : `gitops/base/monitoring/` est référencé depuis **l'overlay** et non
+> depuis `base/kustomization.yaml`. Ce dernier utilise `commonLabels`, qui
+> injecte ses étiquettes dans les **sélecteurs** ; le `Service` `keycloak-metrics`
+> cible des pods gérés par l'opérateur (étiquette `app=keycloak`, sans
+> `managed-by=argocd`). L'overlay (`labels` + `includeSelectors: false`)
+> préserve donc le sélecteur.
+
+### 9.1 Activer UserWorkloadMonitoring (OpenShift 4.21)
+
+OpenShift surveille par défaut **uniquement** les composants de la plateforme.
+Pour scraper les projets utilisateur (dont `keycloak`), activez le **User
+Workload Monitoring** via la `ConfigMap` `cluster-monitoring-config` :
+
+```bash
+oc apply -f uwm.yaml
+```
+
+[`uwm.yaml`](uwm.yaml) positionne `enableUserWorkload: true`. Vérification :
+
+```bash
+oc -n openshift-user-workload-monitoring get pods
+# prometheus-user-workload-* et prometheus-operator-* doivent être Running
+```
+
+> ⚠️ L'espace de noms `keycloak` **ne doit pas** porter l'étiquette
+> `openshift.io/cluster-monitoring: "true"` ([`namespace.yaml`](gitops/base/namespace.yaml)).
+> Cette étiquette rattache l'espace de noms au monitoring de **plateforme**
+> (`prometheus-k8s`) et l'**exclut** du User Workload Monitoring : le
+> `ServiceMonitor` ne serait alors scrapé par personne (cible absente de
+> *Observe → Targets*). UWM surveille automatiquement les projets utilisateur
+> qui ne portent **pas** cette étiquette ; aucune étiquette n'est requise.
+
+### 9.2 Métriques Keycloak et `ServiceMonitor`
+
+Les options de **build** `metrics-enabled`, `health-enabled` et
+`event-metrics-user-enabled` sont intégrées à l'**image**
+([`container/Containerfile`](container/Containerfile)). Les métriques sont
+exposées sur l'**interface de gestion** (port `9000`), distincte du port
+applicatif. ⚠️ `http-relative-path=/auth` s'applique **aussi** à l'interface de
+gestion : le chemin réel est donc **`/auth/metrics`** (et les sondes de santé de
+l'opérateur sur `/auth/health/*`). Un scrape sur `/metrics` renvoie `404`.
+
+> ⚠️ Les options de **build** ne doivent **pas** figurer dans `additionalOptions`
+> du CR : avec `startOptimized: true` l'opérateur ne relance pas `kc.sh build`,
+> et Keycloak refuse alors de démarrer (« *build time options have values that
+> differ from what is persisted* »). Toute modification (p. ex. activer
+> `event-metrics-user-enabled`) exige donc une **reconstruction de l'image**
+> (relancer le pipeline, §3.7).
+
+Le CR Keycloak ([`keycloak.yaml`](gitops/base/keycloak/keycloak.yaml)) n'ajoute
+qu'une option d'**exécution** (effective malgré `startOptimized: true`) :
+
+| Option | Type | Tableau de bord concerné |
+|--------|------|--------------------------|
+| `http-metrics-histograms-enabled=true` | exécution (CR) | *Troubleshooting* (cartes de latence) |
+| `event-metrics-user-enabled=true` | **build** (image) | *Capacity planning* (connexions, inscriptions…) |
+
+Depuis **RHBK 26.4**, l'opérateur crée automatiquement un `ServiceMonitor`
+lorsque les métriques sont actives. Ce dépôt fournit **son propre
+`ServiceMonitor` déclaratif** et désactive donc celui de l'opérateur
+(`spec.serviceMonitor.enabled: false`) pour éviter un double scraping :
+
+- [`keycloak-metrics-service.yaml`](gitops/base/monitoring/keycloak-metrics-service.yaml)
+  — `Service` exposant le port `management` (9000), car le `Service` de
+  l'opérateur n'expose que 8443/8080 ;
+- [`keycloak-servicemonitor.yaml`](gitops/base/monitoring/keycloak-servicemonitor.yaml)
+  — scrape `http://…:9000/auth/metrics` toutes les 30 s. ⚠️ `scheme: http` :
+  l'opérateur sert l'interface de gestion **en clair** même quand le serveur
+  principal est en HTTPS ; scraper en HTTPS échoue (« *server gave HTTP response
+  to HTTPS client* »). Le trafic reste interne au cluster.
+
+Vérification :
+
+```bash
+oc -n keycloak get servicemonitor keycloak
+# Cibles « up » dans Prometheus :
+oc -n openshift-user-workload-monitoring exec -it sts/prometheus-user-workload -- \
+  wget -qO- http://localhost:9090/api/v1/targets | grep keycloak
+```
+
+### 9.3 Déployer Grafana et la source de données
+
+Le **Grafana Operator** (§2.1) doit être installé. Les ressources :
+
+- [`grafana.yaml`](gitops/base/monitoring/grafana.yaml) — instance `Grafana`
+  (étiquette `dashboards: grafana`, cible des CR source/dashboards). Identifiants
+  admin injectés depuis le secret `grafana-admin-credentials` ;
+- [`grafana-route.yaml`](gitops/base/monitoring/grafana-route.yaml) — `Route`
+  HTTPS (terminaison edge) vers `keycloak-grafana-service:3000` ;
+- [`grafana-rbac.yaml`](gitops/base/monitoring/grafana-rbac.yaml) — compte de
+  service `grafana-sa`, liaison au `ClusterRole` **`cluster-monitoring-view`** et
+  `Secret` de jeton (requis depuis OpenShift 4.11) ;
+- [`grafana-datasource.yaml`](gitops/base/monitoring/grafana-datasource.yaml) —
+  source `Prometheus` pointant vers le **Thanos Querier**
+  (`thanos-querier.openshift-monitoring.svc:9091`). Le jeton `grafana-sa` est
+  injecté dans l'en-tête `Authorization` (`valuesFrom`).
+
+> **Avant la synchronisation**, remplacez le gabarit
+> [`grafana-secret-template.yaml`](gitops/base/monitoring/grafana-secret-template.yaml)
+> par un secret réel (SealedSecrets/External Secrets) — comme pour le secret BD
+> (§3.6) — sinon le mot de passe admin reste la valeur d'exemple.
+
+Thanos Querier sur le port `9091` applique le RBAC Kubernetes : sans
+`cluster-monitoring-view`, Grafana reçoit `403` sur ses requêtes.
+
+### 9.4 Tableaux de bord Keycloak
+
+[`grafana-dashboards.yaml`](gitops/base/monitoring/grafana-dashboards.yaml)
+importe les **tableaux de bord officiels** depuis
+<https://github.com/keycloak/keycloak-grafana-dashboard> (l'opérateur télécharge
+le JSON à l'URL indiquée) :
+
+| Tableau de bord | Usage |
+|-----------------|-------|
+| `keycloak-capacity-planning` | Dimensionnement (charge, événements utilisateur) |
+| `keycloak-troubleshooting` | Diagnostic (latences, erreurs, JVM, cache) |
+
+L'entrée `__inputs` `DS_PROMETHEUS` de chaque tableau de bord est reliée à la
+source `Prometheus` via le champ `datasources` du CR `GrafanaDashboard`.
+
+### 9.5 Accès et vérification
+
+```bash
+# URL de Grafana
+oc -n keycloak get route keycloak-grafana -o jsonpath='{.spec.host}{"\n"}'
+
+# État des ressources Grafana
+oc -n keycloak get grafana,grafanadatasource,grafanadashboard
+
+# Le pod Grafana doit être Running
+oc -n keycloak get pods -l app.kubernetes.io/managed-by=grafana-operator
+```
+
+Connectez-vous avec les identifiants du secret `grafana-admin-credentials`,
+puis ouvrez les tableaux de bord *Keycloak capacity planning* et *Keycloak
+troubleshooting*.
+
+Si les graphiques sont vides, vérifier dans l'ordre :
+
+1. **Variables du tableau de bord** — en haut de chaque tableau de bord,
+   sélectionner `namespace = keycloak` (et `realm` pour *capacity planning*). À
+   l'import, `$namespace` prend par défaut la première valeur, rarement
+   `keycloak`, ce qui vide tous les panneaux.
+2. **UWM actif** (§9.1) et namespace non étiqueté `cluster-monitoring`.
+3. **Cible `keycloak` « up »** (§9.2). Dans *Grafana → Explore* :
+   `up{namespace="keycloak"}` doit renvoyer une série par pod.
+4. **Source de données « working »** (jeton/RBAC §9.3).
+5. ***Capacity planning* vide** — ce tableau de bord interroge
+   `keycloak_user_events_total` (métriques d'événements). Tant que l'image n'a
+   pas été reconstruite avec `event-metrics-user-enabled` (option de **build**,
+   §9.2), ces séries n'existent pas et la variable `realm` reste vide. Le
+   tableau de bord *troubleshooting* ne dépend pas de ces métriques.
+
+> **Pièges rencontrés et résolus** (consignés ici pour mémoire) :
+> | Symptôme | Cause | Correctif |
+> |----------|-------|-----------|
+> | Keycloak ne démarre pas (« *build time options … differ* ») | option de build dans `additionalOptions` | l'intégrer à l'image (§9.2) |
+> | `ServiceMonitor` absent des cibles | namespace étiqueté `cluster-monitoring` | retirer l'étiquette (§9.1) |
+> | Scrape `404` | chemin `/metrics` au lieu de `/auth/metrics` | `http-relative-path` s'applique à la gestion (§9.2) |
+> | Scrape « *HTTP response to HTTPS client* » | interface de gestion en clair | `scheme: http` (§9.2) |

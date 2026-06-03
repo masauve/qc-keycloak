@@ -1,3 +1,9 @@
+# Amorçage UserWorkloadMonitoring (OpenShift 4.21) — voir README §9.1.
+# Active le monitoring des projets utilisateur (Prometheus dans
+# openshift-user-workload-monitoring), prérequis du ServiceMonitor Keycloak.
+#
+# Opération hors bande (modifie openshift-monitoring, hors du périmètre Argo CD) :
+#   oc apply -f uwm.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:

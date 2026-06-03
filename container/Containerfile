@@ -22,6 +22,11 @@ ENV KC_FEATURES=token-exchange,admin-fine-grained-authz
 # Métriques et santé
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
+# Métriques d'événements utilisateur (option de BUILD) : requises par le tableau
+# de bord Grafana « capacity planning ». Doit etre integree a l'image, sinon avec
+# startOptimized=true Keycloak refuse de demarrer (« build time options have
+# values that differ from what is persisted »).
+ENV KC_EVENT_METRICS_USER_ENABLED=true
 
 # Chemin relatif HTTP : option de BUILD. Elle doit etre integree a l'image,
 # sinon avec startOptimized=true Keycloak l'ignore (« values that differ from
@@ -49,6 +54,7 @@ RUN /opt/keycloak/bin/kc.sh build \
     --db=postgres \
     --health-enabled=true \
     --metrics-enabled=true \
+    --event-metrics-user-enabled=true \
     --features=token-exchange,admin-fine-grained-authz \
     --http-relative-path=/auth
 
