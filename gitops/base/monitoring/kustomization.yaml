@@ -8,7 +8,7 @@ resources:
   - keycloak-servicemonitor.yaml
   # Grafana (operateur) + source de donnees + tableaux de bord
   - grafana-rbac.yaml
-  - grafana-secret-template.yaml
+  #- grafana-secret-template.yaml
   - grafana.yaml
   - grafana-route.yaml
   - grafana-datasource.yaml
