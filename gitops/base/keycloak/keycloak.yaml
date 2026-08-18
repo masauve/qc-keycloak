@@ -53,7 +53,7 @@ spec:
     # celle integree a l'image (container/Containerfile), sinon « build time
     # options ... differ from what is persisted » et Keycloak ne demarre pas.
     - name: features
-      value: "token-exchange,admin-fine-grained-authz,user-event-metrics"
+      value: "token-exchange,admin-fine-grained-authz,user-event-metrics,scim-api"
     - name: cache
       value: ispn
     # jdbc-ping : decouverte du cluster via la base PostgreSQL existante.
